@@ -711,29 +711,37 @@ async function connect(){
     const [d,u]=await Promise.all([claude.use('db'),claude.use('user')]);
     uid=u?await u.id():null;
     if(!d||!uid){setStatus('local');return}
-    db=d;col=db.collection('data/users/'+uid);setStatus('sync');
-    col.onSnapshot(snap=>{
-      const next={};let nextPrefs=null;
-      snap.docs.forEach(doc=>{const v=JSON.parse(JSON.stringify(doc.data())); // snapshot data is frozen; keep an editable copy
-        if(doc.id==='prefs')nextPrefs=v;else next[doc.id]=v});
-      for(const k in logs){
-        if(dirty[k])next[k]=logs[k];
-        else if(!(k in next)&&!snap.metadata.fromCache){next[k]=logs[k];queueSave(k)} // device-only logs move to the account
-      }
-      if(!dirty.prefs){
-        if(nextPrefs)prefs={slots:{},...nextPrefs};
-        else if(!snap.metadata.fromCache&&Object.keys(prefs.slots||{}).length)queueSave('prefs');
-      }
-      logs=next;lsSet(LS,logs);lsSet(LSP,prefs);
-      if(document.activeElement?.matches('input[type=number]'))pendingRender=true;else render();
-    },()=>setStatus('err'));
+    attachStore(d,d.collection('data/users/'+uid));
   }catch(e){setStatus('local')}
 }
+// Sync with any store that has doc().set() and onSnapshot() on a collection: Claude's db here, Firestore in the home-screen app.
+let unsubStore=null;
+function attachStore(store,collection){
+  detachStore();
+  db=store;col=collection;setStatus('sync');
+  unsubStore=col.onSnapshot(snap=>{
+    const next={};let nextPrefs=null;
+    snap.docs.forEach(doc=>{const v=JSON.parse(JSON.stringify(doc.data())); // snapshot data can be frozen; keep an editable copy
+      if(doc.id==='prefs')nextPrefs=v;else next[doc.id]=v});
+    for(const k in logs){
+      if(dirty[k])next[k]=logs[k];
+      else if(!snap.metadata.fromCache&&(!(k in next)||(logs[k].updated||0)>(next[k].updated||0))){next[k]=logs[k];queueSave(k)} // device-only or newer days go up
+    }
+    if(!dirty.prefs){
+      if(nextPrefs)prefs={slots:{},...nextPrefs};
+      else if(!snap.metadata.fromCache&&(Object.keys(prefs.slots||{}).length||prefs.runAdj))queueSave('prefs');
+    }
+    logs=next;lsSet(LS,logs);lsSet(LSP,prefs);
+    if(document.activeElement?.matches('input[type=number]'))pendingRender=true;else render();
+  },()=>setStatus('err'));
+}
+function detachStore(){if(unsubStore)unsubStore();unsubStore=null;db=null;col=null;setStatus('local')}
 function queueSave(k){
   dirty[k]=(dirty[k]||0)+1;lsSet(LS,logs);lsSet(LSP,prefs);
   if(!db){delete dirty[k];return}
   setStatus('saving');clearTimeout(timers[k]);
   timers[k]=setTimeout(()=>{
+    if(!col){delete dirty[k];return} // signed out in the meantime; the change is already saved on the device
     const v=dirty[k],body=JSON.parse(JSON.stringify(k==='prefs'?prefs:logs[k]));
     chains[k]=(chains[k]||Promise.resolve()).then(()=>col.doc(k).set(body)).then(()=>{
       if(dirty[k]===v)delete dirty[k];
@@ -999,34 +1007,70 @@ document.getElementById('timerX').onclick=()=>{clearInterval(tInt);timer.hidden=
 render();
 connect();
 </script>
-
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
 <script>
-// ---------- home-screen app extras (added by build-app.js) ----------
+// ---------- home-screen app extras: offline, sync, backup ----------
 (function(){
   if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){} // ask the phone not to clear the log
+  const HOME='https://thatpandabean-workout.firebaseapp.com/';
+  const moved=location.hostname.endsWith('github.io'); // the old address: sign-in only works on the Firebase one
+
   const box=document.createElement('section');box.className='hist';
-  box.innerHTML='<h3>Backup</h3><p class="note">Your log is saved on this phone. Save a backup file now and then, and import it if you switch phones or clear your browser.</p>'+
+  box.innerHTML=
+    (moved?'<div class="restday"><p><b>This app moved to <a href="'+HOME+'">'+HOME.replace('https://','').replace(/\/$/,'')+'</a></b>, which can sync between your phone and computer.</p>'+
+      '<p class="note">To bring your log along: tap <b>Save backup file</b> below, open the new link, add it to your home screen, then use <b>Import backup</b> there. After that you can delete this old icon.</p></div>':'')+
+    '<h3>Sync</h3><p class="note" id="sy-text">'+(moved?'Sync works in the new app, not on this old address.':'Sign in with Google to keep your phone and computer in step. Your log stays on this device too, so it works offline.')+'</p>'+
+    '<div class="foot" id="sy-row"'+(moved?' hidden':'')+'><button class="navbtn" id="sy-in">Sign in with Google</button><button class="navbtn" id="sy-out" hidden>Sign out</button></div>'+
+    '<h3>Backup</h3><p class="note">Save a backup file now and then. Import it if you switch phones or clear your browser.</p>'+
     '<div class="foot"><button class="navbtn" id="bk-export">Save backup file</button><label class="navbtn" for="bk-import" style="cursor:pointer">Import backup</label><input type="file" id="bk-import" accept="application/json,.json" hidden></div>'+
     '<p class="note" id="bk-msg" role="status"></p>';
   document.getElementById('hist').after(box);
   const msg=t=>{document.getElementById('bk-msg').textContent=t};
-  document.getElementById('bk-export').onclick=()=>{
+  const $=id=>document.getElementById(id);
+
+  // ---- sync ----
+  if(!moved){
+    if(!window.firebase){$('sy-text').textContent='Sync needs an internet connection the first time you open the app. Your log is saved on this device.'}
+    else{
+      firebase.initializeApp({"apiKey":"AIzaSyARFVUoKYQiJpTChcldl_Oh7Xl2BuB9rFQ","authDomain":"thatpandabean-workout.firebaseapp.com","projectId":"thatpandabean-workout","storageBucket":"thatpandabean-workout.firebasestorage.app","messagingSenderId":"763233204104","appId":"1:763233204104:web:b4009fc0677f6ad813ac3d"});
+      const auth=firebase.auth(),store=firebase.firestore();
+      try{store.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){} // keep working offline, catch up later
+      auth.getRedirectResult().catch(e=>{$('sy-text').textContent='Sign-in didn\'t finish ('+(e.code||'error')+'). Try again.'});
+      auth.onAuthStateChanged(user=>{
+        $('sy-in').hidden=!!user;$('sy-out').hidden=!user;
+        if(user){
+          $('sy-text').textContent='Signed in as '+(user.email||'your Google account')+'. Your log syncs with every device where you sign in.';
+          attachStore(store,store.collection('users/'+user.uid+'/log'));
+        }else{
+          $('sy-text').textContent='Sign in with Google to keep your phone and computer in step. Your log stays on this device too, so it works offline.';
+          detachStore();
+        }
+      });
+      $('sy-in').onclick=()=>{$('sy-text').textContent='Opening Google sign-in...';auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider())};
+      $('sy-out').onclick=()=>auth.signOut(); // the log stays on this device
+    }
+  }
+
+  // ---- backup ----
+  $('bk-export').onclick=()=>{
     const data={app:'ppl',version:1,saved:new Date().toISOString(),logs,prefs};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='workout-backup-'+today+'.json';
     document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
     msg('Backup saved. Keep the file somewhere safe, like the Files app, Google Drive or an email to yourself.');
   };
-  document.getElementById('bk-import').onchange=async e=>{
+  $('bk-import').onchange=async e=>{
     const f=e.target.files[0];if(!f)return;
     try{
       const d=JSON.parse(await f.text());
       if(d.app!=='ppl'||!d.logs||typeof d.logs!=='object')throw new Error('not a backup');
       let n=0;
-      for(const k in d.logs)if(isDate(k)&&(!logs[k]||(d.logs[k].updated||0)>=(logs[k].updated||0))){logs[k]=d.logs[k];n++}
+      for(const k in d.logs)if(isDate(k)&&(!logs[k]||(d.logs[k].updated||0)>=(logs[k].updated||0))){logs[k]=d.logs[k];queueSave(k);n++}
       prefs=Object.assign({slots:{}},prefs,d.prefs||{},{slots:Object.assign({},prefs.slots,(d.prefs||{}).slots)});
-      lsSet(LS,logs);lsSet(LSP,prefs);render();
+      queueSave('prefs');render();
       msg('Imported '+n+' day'+(n===1?'':'s')+' from the backup.');
     }catch(err){msg('That file isn\'t a backup from this app, so nothing was changed.')}
     e.target.value='';
