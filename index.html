@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EDF0F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PPL">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Push Pull Legs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<style>
+/* Layout: one column training log. The day's color (push/pull/legs) is the only accent. */
+:root{
+  --bg:#EDF0F2;--surface:#FFFFFF;--panel:#F4F6F8;--ink:#16212B;--muted:#5D6A76;--line:#D3DAE0;
+  --push:#C2410C;--pull:#1864AB;--legs:#237A35;--rest:#6B7680;--on-day:#FFFFFF;--day:var(--rest);
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1419;--surface:#182028;--panel:#131A21;--ink:#E5EAEE;--muted:#98A4AF;--line:#2A343D;
+  --push:#FF8A4C;--pull:#62A8EE;--legs:#5CC274;--rest:#8D98A2;--on-day:#0F1419;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1419;--surface:#182028;--panel:#131A21;--ink:#E5EAEE;--muted:#98A4AF;--line:#2A343D;
+  --push:#FF8A4C;--pull:#62A8EE;--legs:#5CC274;--rest:#8D98A2;--on-day:#0F1419;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.d-push{--day:var(--push)}.d-pull{--day:var(--pull)}.d-legs{--day:var(--legs)}.d-rest{--day:var(--rest)}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:18px 110px;display:grid;gap:18px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--day);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.top h1{font-size:26px;text-transform:uppercase;letter-spacing:.04em}
+.status{font-size:13px;color:var(--muted)}
+.status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+.status.ok::before{background:var(--legs)}.status.err::before{background:var(--push)}
+
+.weeknav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.weeknav span{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.navbtn{background:none;border:1px solid var(--line);border-radius:8px;padding:4px 12px;font-size:14px}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.wd{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 2px 7px;display:grid;justify-items:center;gap:1px;position:relative}
+.wd small{font-size:12px;color:var(--muted)}
+.wd b{font-family:var(--display);font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.wd i{font-style:normal;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--day)}
+.wd i+i{color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+.wd.today b{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.wd.sel{background:var(--day);border-color:var(--day);color:var(--on-day)}
+.wd.sel small,.wd.sel i,.wd.sel i+i{color:var(--on-day)}
+.wd.logged::after{content:"";position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--day)}
+.wd.sel.logged::after{background:var(--on-day)}
+
+.dayhead{display:grid;gap:10px}
+.dayrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.dayhead h2{font-size:clamp(48px,13vw,72px);line-height:.9;text-transform:uppercase;color:var(--day)}
+.date{color:var(--muted);font-size:15px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:none;border-radius:7px;padding:6px 16px;font-weight:600;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--day);color:var(--on-day)}
+.meta{display:flex;gap:8px 18px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.meta strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar div{height:100%;background:var(--day);transition:width .3s}
+.note{font-size:14px;color:var(--muted);margin:0;max-width:65ch}
+.note a{color:var(--day)}
+
+.list{display:grid;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}
+.card-h{display:flex;gap:12px;align-items:flex-start}
+.card-h>div{flex:1;min-width:0}
+.num{font-family:var(--display);font-size:30px;line-height:1;color:var(--day);min-width:1.1em}
+.card h3{font-size:26px;line-height:1.05}
+.target{font-size:14px;color:var(--muted)}
+.swapbtn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:5px 10px;font-size:14px;font-weight:600;white-space:nowrap}
+.swapbtn[aria-expanded="true"]{border-color:var(--day);color:var(--day)}
+.alts{display:grid;gap:6px;padding:10px;background:var(--panel);border-radius:10px}
+.alts p{margin:0;font-size:13px;color:var(--muted)}
+.alt{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.alt span{display:grid;min-width:0}
+.alt small{color:var(--muted);font-size:13px}
+.alt[aria-pressed="true"]{border-color:var(--day);box-shadow:inset 3px 0 0 var(--day)}
+.alt em{font-style:normal;font-size:12px;font-weight:600;color:var(--day);white-space:nowrap}
+.rx{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-variant-numeric:tabular-nums}
+.chip.main{background:var(--day);border-color:var(--day);color:var(--on-day)}
+.chip.needs{border-style:dashed}
+.stage{background:var(--panel);border-radius:10px;padding:6px}
+.stage svg{width:100%;max-height:300px;height:auto;display:block}
+.phase{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.phase b{font-family:var(--display);font-size:20px;color:var(--day);font-variant-numeric:tabular-nums}
+.phase span{display:flex;gap:8px;align-items:center}
+.track{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.track div{height:100%;background:var(--day);width:0}
+.vid{font-size:14px;font-weight:600;color:var(--day)}
+.steps{margin:0;padding-left:1.3em;display:grid;gap:4px;max-width:65ch}
+.tip{font-size:14px;margin:0;padding:8px 10px;border-radius:8px;background:var(--panel);max-width:65ch}
+.tip b{color:var(--day)}
+.log{display:grid;gap:6px}
+.log-h,.row{display:grid;grid-template-columns:3.2em 1fr 1fr 3em;gap:8px;align-items:center}
+.log.nowt .log-h,.log.nowt .row{grid-template-columns:3.2em 1fr 3em}
+.log-h{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.row label.sn{font-family:var(--display);font-size:18px;color:var(--muted)}
+.row input[type=number]{width:100%;min-width:0;box-sizing:border-box;font:inherit;font-variant-numeric:tabular-nums;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.row input[type=checkbox]{width:26px;height:26px;accent-color:var(--day);justify-self:center;margin:0}
+.row.done label.sn{color:var(--day)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.last{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.restbtn{border:1px solid var(--day);color:var(--day);background:none;border-radius:8px;padding:6px 12px;font-weight:600;font-size:14px}
+
+.sec{font-size:24px;text-transform:uppercase;letter-spacing:.03em;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:8px}
+.sec small{font-family:var(--body);font-size:14px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:500}
+.timeline{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px}
+.timeline i{background:var(--line)}.timeline i.jog{background:var(--day)}
+.rt{display:grid;gap:6px;padding:14px 12px;border-radius:10px;background:var(--panel);justify-items:center;text-align:center}
+.rt-main{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;justify-content:center}
+.rt-main b{font-family:var(--display);font-size:32px;text-transform:uppercase;color:var(--day)}
+.rt-main span{font-family:var(--display);font-size:42px;line-height:1;font-variant-numeric:tabular-nums}
+.rt-sub{font-size:14px;color:var(--muted)}
+.runlog{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.runlog input[type=number]{width:6.5em;box-sizing:border-box;font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.runlog input[type=checkbox]{width:24px;height:24px;accent-color:var(--day);margin:0}
+.runlog label{display:flex;align-items:center;gap:6px;font-weight:600}
+.runlog span{color:var(--muted);font-size:14px}
+.restday{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:8px}
+.restday p{margin:0;max-width:65ch}
+
+.hist{display:grid;gap:8px}
+.hist h3{font-size:22px;text-transform:uppercase;letter-spacing:.03em}
+.hrow{display:flex;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:left;width:100%}
+.hrow span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hrow b{color:var(--day)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+
+.timer[hidden]{display:none}
+.timer{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);display:flex;justify-content:center;align-items:center;gap:16px}
+.timer b{font-family:var(--display);font-size:30px;font-variant-numeric:tabular-nums;min-width:3.2em;text-align:center}
+.timer button{background:none;border:1px solid var(--bg);color:var(--bg);border-radius:8px;padding:5px 12px;font-size:14px}
+
+/* figure */
+.floor{stroke:var(--line);stroke-width:2}
+.b{stroke:var(--ink);stroke-width:7;stroke-linecap:round;fill:none}
+.b.hl{stroke:var(--day)}
+.far{opacity:.32}
+.head{fill:var(--ink)}
+.pf{fill:var(--line);stroke:var(--muted);stroke-width:1}
+.pl{stroke:var(--muted);stroke-width:3;stroke-linecap:round;fill:none}
+.pthin{stroke:var(--muted);stroke-width:1.5;fill:none}
+.pdot{fill:var(--muted)}
+.pad{stroke:var(--line);stroke-width:7;stroke-linecap:round}
+.towel{stroke:var(--day);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:4 3;fill:none}
+@media (prefers-reduced-motion: reduce){.bar div{transition:none}}
+@media (max-width:420px){.card{padding:12px}}
+</style>
+
+<div class="wrap d-rest" id="app">
+  <header class="top">
+    <h1>Push Pull Legs</h1>
+    <span class="status" id="status">Loading your log</span>
+  </header>
+  <nav class="weeknav" aria-label="Week">
+    <button class="navbtn" data-week="-7" aria-label="Previous week">&#8249; Prev</button>
+    <span id="weeklabel"></span>
+    <button class="navbtn" data-week="7" aria-label="Next week">Next &#8250;</button>
+  </nav>
+  <div class="week" id="week"></div>
+  <section class="dayhead" id="dayhead"></section>
+  <section class="list" id="list"></section>
+  <section class="hist" id="hist"></section>
+  <p class="note">Want to learn calisthenics skills later (handstand, muscle-up)? <a href="https://wingssw.com/#/skilltree">Wings skill tree</a> shows the order to learn them in.</p>
+</div>
+<div class="timer" id="timer" hidden>
+  <span>Rest</span><b id="timerT">0:00</b><button id="timerX">Skip</button>
+</div>
+
+<script>
+// ---------- exercise library ----------
+// Poses use joint angles in degrees: 0 = right, 90 = down, -90 = up. Figure faces right.
+// t torso (hip to shoulder), l [thigh, shin], a [upper arm, forearm], fa foot. Index 1 = near side, 2 = far side.
+// Animation: go = start->end phase [label, seconds], back = end->start. pin = point that never moves,
+// fix = hands/feet that stay planted (the arm or leg bends to reach them).
+const PUSHUP_START={t:-26,l:[154,154],a:[90,90],fa:30},PUSHUP_END={t:-5,l:[175,175],a:[-145,80],fa:5};
+const ROW_START={t:-8,l:[172,172],a:[-85,-85],fa:-95},ROW_END={t:-14,l:[166,166],a:[-120,-43],fa:-95};
+const SQUAT_START={t:-88,l:[90,90],a:[0,0]},SQUAT_END={t:-55,l:[10,100],a:[5,5]};
+const E={
+ // ----- home push -----
+ pushup:{name:'Push-up',target:'Chest, shoulders, triceps',sets:3,reps:'8-15',rest:90,hx:110,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Push up',1],
+  start:PUSHUP_START,end:PUSHUP_END,
+  steps:['Hands a little wider than your shoulders, body in one straight line from head to heels.','Lower until your chest is about a fist from the floor, elbows about 45° from your sides.','Push the floor away until your arms are straight.'],
+  tip:'<b>Harder:</b> at 15 reps on every set, swap to decline push-ups. <b>Easier:</b> swap to incline push-ups.'},
+ inclinepush:{name:'Incline push-up',target:'Chest, shoulders, triceps',sets:3,reps:'10-15',rest:60,hx:105,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Push up',1],
+  props:[{type:'box',at:'w1',w:30}],
+  start:{t:-51,l:[129,129],a:[90,90],fa:60},end:{t:-38,l:[142,142],a:[158,73],fa:60},
+  steps:['Hands on the edge of a sturdy chair pushed against a wall, or a table. Walk your feet back until your body is straight.','Lower your chest to the edge, elbows about 45° from your sides.','Push back up to straight arms.'],
+  tip:'<b>Easier</b> than a floor push-up. Use it if you can\'t get 8 regular ones.'},
+ declinepush:{name:'Decline push-up',target:'Upper chest, shoulders, triceps',sets:3,reps:'6-12',rest:90,hx:110,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Push up',1],
+  props:[{type:'box',at:'t1',w:26,d:[2,0]}],
+  start:{t:3,l:[-177,-177],a:[90,90],fa:75},end:{t:18,l:[-162,-162],a:[-150,75],fa:75},
+  steps:['Feet on a chair or bed, hands on the floor a little wider than your shoulders.','Lower your chest toward the floor with your body straight.','Push back up.'],
+  tip:'<b>Harder</b> than a regular push-up. It puts more work on your upper chest and shoulders.'},
+ pike:{name:'Pike push-up',target:'Shoulders, triceps',sets:3,reps:'6-10',rest:90,hx:80,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Press up',1],
+  start:{t:30,l:[105,105],a:[55,55],fa:20},end:{t:45,l:[120,120],a:[5,80],fa:20},
+  steps:['Start in a push-up, walk your feet in and lift your hips so your body makes an upside-down V.','Bend your elbows and lower the top of your head toward the floor just in front of your hands.','Press back up to straight arms. Keep your hips high the whole time.'],
+  tip:'<b>Harder:</b> at 10 easy reps, swap to the elevated pike.'},
+ elevpike:{name:'Elevated pike push-up',target:'Shoulders, triceps',sets:3,reps:'5-10',rest:90,hx:110,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Press up',1],
+  props:[{type:'box',at:'t1',w:26,d:[-4,0]}],
+  start:{t:65,l:[140,140],a:[75,75],fa:80},end:{t:80,l:[150,150],a:[10,80],fa:80},
+  steps:['Feet on a chair, hands on the floor, hips stacked high over your shoulders.','Bend your elbows and lower your head toward the floor in front of your hands.','Press back up.'],
+  tip:'<b>Harder:</b> the closer your hands are to the chair, the more upright you are and the harder it gets.'},
+ bpress:{name:'Backpack overhead press',vb:'0 -18 200 148',target:'Shoulders, triceps',needs:'Backpack with books',sets:3,reps:'8-12',rest:60,hx:100,hl:['u','f'],go:['Press up',1],back:['Lower',2],
+  props:[{type:'pack',at:'w1',d:[2,-4]}],
+  start:{t:-90,l1:[90,90],l2:[88,92],a:[100,-85]},end:{t:-90,l1:[90,90],l2:[88,92],a:[-88,-88]},
+  steps:['Fill a backpack with books and hold it by the sides at shoulder height.','Press it straight overhead until your arms are straight. Squeeze your glutes so your lower back doesn\'t arch.','Lower slowly to your shoulders.'],
+  tip:'<b>Weight:</b> add or remove books so 8-12 reps is hard.'},
+ chairdip:{name:'Chair dip',target:'Triceps, chest',sets:3,reps:'8-12',rest:90,hx:95,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Press up',1],
+  props:[{type:'box',at:'w1',w:30,d:[-10,0]}],
+  start:{t:-88,l:[0,90],a:[95,95]},end:{t:-85,l:[-30,72],a:[160,80]},
+  steps:['Push a sturdy chair against a wall. Sit on the edge, hands next to your hips, fingers forward.','Slide your hips off the front and lower until your elbows bend to about 90°.','Press back up until your arms are straight.'],
+  tip:'<b>Careful:</b> stop going deep if your shoulders hurt. <b>Harder:</b> straighten your legs.'},
+ diamond:{name:'Diamond push-up',target:'Triceps, chest',sets:3,reps:'6-12',rest:90,hx:110,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Lower',2],back:['Push up',1],
+  start:PUSHUP_START,end:PUSHUP_END,
+  steps:['Push-up position with your hands together under your chest, thumbs and index fingers touching to make a diamond.','Lower slowly, keeping your elbows close to your sides.','Push back up to straight arms.'],
+  tip:'<b>Easier:</b> do them with your knees down if you can\'t get 6.'},
+ bpext:{name:'Backpack triceps extension',vb:'0 -18 200 148',target:'Triceps',needs:'Backpack with books',sets:3,reps:'10-15',rest:60,hx:100,hl:['f'],go:['Straighten',1],back:['Lower behind head',2],
+  props:[{type:'pack',at:'w1',d:[-2,-2]}],
+  start:{t:-90,l1:[90,90],l2:[88,92],a:[-100,120]},end:{t:-90,l1:[90,90],l2:[88,92],a:[-95,-95]},
+  steps:['Hold a loaded backpack overhead with both hands, elbows pointing up.','Lower it behind your head by bending only your elbows.','Straighten your arms to lift it back up.'],
+  tip:'<b>Check:</b> keep your elbows pointing at the ceiling, not flaring out.'},
+ plank:{name:'Plank',target:'Core, shoulders',sets:2,reps:'20-45',hold:true,rest:45,hx:95,hl:['tor','th'],go:['Lift into plank',1.5],back:['Knees down',1],
+  start:{t:-20,l:[160,180],a:[90,0],fa:180},end:{t:-14,l:[166,166],a:[90,0],fa:70},
+  steps:['Forearms on the floor, elbows under your shoulders.','Lift your knees so your body is straight from head to heels.','Squeeze your glutes and stomach and hold. Don\'t let your hips sag.'],
+  tip:'<b>Easier:</b> keep your knees down.'},
+ hollow:{name:'Hollow hold',target:'Core',sets:2,reps:'15-30',hold:true,rest:45,hx:96,hl:['tor','th'],go:['Lift',1.5],back:['Lower',1],
+  start:{t:180,l:[0,0],a:[180,180],lift:5},end:{t:-170,l:[-15,-15],a:[-165,-165],fa:-15,lift:3},
+  steps:['Lie on your back, arms overhead.','Press your lower back into the floor, then lift your shoulders and legs a few inches.','Hold. If your lower back lifts off the floor, bend your knees.'],
+  tip:'<b>Easier:</b> bend your knees and keep your arms by your sides.'},
+
+ // ----- home pull -----
+ tablerow:{name:'Table row',target:'Upper back, biceps',sets:4,reps:'6-12',rest:90,hx:92,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Pull',1],back:['Lower',2],
+  props:[{type:'table',at:'w1'}],
+  start:ROW_START,end:ROW_END,
+  steps:['Lie under a sturdy table and grab the edge with both hands, shoulder width apart.','Keep your body straight, heels on the floor, and pull your chest up to the edge.','Lower slowly until your arms are straight.'],
+  tip:'<b>Careful:</b> test the table first. It must not tip when you pull. A heavy desk against a wall is safest. <b>Harder:</b> pause 2 seconds at the top.'},
+ broomrow:{name:'Broom row',target:'Upper back, biceps',needs:'Broom and two chairs',sets:4,reps:'6-12',rest:90,hx:92,hl:['u','f'],pin:'t1',fix:['w1','w2'],go:['Pull',1],back:['Lower',2],
+  props:[{type:'post',at:'w1'}],
+  start:ROW_START,end:ROW_END,
+  steps:['Lay a sturdy broom handle across the backs of two chairs of the same height. Lie under it and grab it.','Body straight, heels on the floor, pull your chest to the handle.','Lower slowly until your arms are straight.'],
+  tip:'<b>Careful:</b> test it first. The chairs must not tip and the handle must not bend. Grip it close to the chairs, not in the middle.'},
+ doorrow:{name:'Towel door row',target:'Back, biceps',sets:3,reps:'10-15',rest:60,hx:90,hl:['u','f'],pin:'t1',go:['Pull',1],back:['Lower',2],
+  props:[{type:'door',at:'f1',dx:22}],
+  start:{t:-110,l:[70,70],a:[29,29]},end:{t:-100,l:[78,78],a:[120,-14]},
+  steps:['Close a door and wrap a towel around the doorknob. Hold one end in each hand.','Feet close to the door, lean back until your arms are straight and your body is in a line.','Pull your chest toward the door, squeezing your shoulder blades together, then lower slowly.'],
+  tip:'<b>Careful:</b> stand on the side where the door opens away from you, so pulling presses it shut. <b>Harder:</b> walk your feet closer to lean back further.'},
+ bprow:{name:'Backpack bent-over row',target:'Back, biceps',needs:'Backpack with books',sets:3,reps:'10-15',rest:60,hx:95,hl:['u','f'],pin:'t1',go:['Row up',1],back:['Lower',2],
+  props:[{type:'pack',at:'w1',d:[0,5]}],
+  start:{t:-20,l:[75,100],a:[90,90]},end:{t:-20,l:[75,100],a:[-150,90]},
+  steps:['Hold a loaded backpack with both hands. Bend your knees a little and hinge forward until your back is nearly flat.','Pull the bag to your stomach, squeezing your shoulder blades together.','Lower slowly until your arms are straight.'],
+  tip:'<b>Check:</b> back flat the whole time, no jerking the bag up.'},
+ yraise:{name:'Prone Y raise',target:'Upper back, rear shoulders',sets:3,reps:'10-12',rest:60,hx:88,hl:['u','f'],go:['Lift',1],back:['Lower',2],
+  start:{t:0,l:[180,180],a:[3,0],fa:175,lift:6},end:{t:-4,l:[180,180],a:[-18,-14],fa:175,lift:6},
+  steps:['Lie face down with your arms overhead in a Y shape, thumbs pointing up.','Squeeze your shoulder blades back and down to lift your arms a few inches. Keep your forehead low.','Hold 2 seconds, then lower slowly.'],
+  tip:'<b>Harder:</b> add a set with arms straight out to the sides (a T).'},
+ framerow:{name:'Doorframe row',target:'Upper back, biceps',sets:3,reps:'10-15',side:true,rest:45,hx:90,hl:['u','f'],pin:'t1',fix:['w1'],go:['Pull',1],back:['Lower',2],
+  props:[{type:'wall',at:'f1',dx:13}],
+  start:{t:-110,l:[70,70],a1:[29,29],a2:[95,95]},end:{t:-98,l:[70,70],a1:[120,-14],a2:[95,95]},
+  steps:['Stand in a doorway and grip the side of the frame with one hand at chest height.','Walk your feet close to the frame and lean back until your arm is straight.','Pull your chest to the frame, squeezing your shoulder blade back, then lower slowly. Switch arms after the set.'],
+  tip:'<b>Careful:</b> grip firmly and keep your feet close so you can catch yourself. <b>Harder:</b> move your feet closer to lean back further.'},
+ superman:{name:'Superman hold',target:'Lower back, glutes',sets:3,reps:'20-30',hold:true,rest:45,hx:88,hl:['tor','th'],go:['Lift',1.5],back:['Release',1],
+  start:{t:0,l:[180,180],a:[3,0],fa:175,lift:6},end:{t:-10,l:[-172,-172],a:[-15,-12],fa:-172,lift:4},
+  steps:['Lie face down, arms overhead.','Lift your arms, chest and legs a few inches off the floor at the same time.','Hold for the time while breathing normally, then lower.'],
+  tip:'<b>Easier:</b> lift only your arms and chest.'},
+ birddog:{name:'Bird dog',target:'Lower back, core',sets:3,reps:'8-12',side:true,rest:45,hx:100,hl:['tor'],go:['Reach out',1.5],back:['Return',1.5],
+  start:{t:-20,l:[90,180],a:[95,95],fa:180},end:{t:-20,l1:[90,180],l2:[178,178],a1:[-5,-5],a2:[95,95],fa:180},
+  steps:['On hands and knees, hands under your shoulders, knees under your hips.','Reach one arm forward and the opposite leg back until both are straight and level with your body.','Hold 2 seconds, return, and switch sides.'],
+  tip:'<b>Check:</b> keep your hips level. Imagine a cup of water on your lower back.'},
+ towelcurl:{name:'Towel curl hold',target:'Biceps',sets:3,reps:'20-30',hold:true,rest:45,hx:100,hl:['u','f'],pin:'t1',go:['Curl up',1.5],back:['Release',1],
+  props:[{type:'towel',at:'w1',to:'t1'}],
+  start:{t:-90,l1:[90,90],l2:[88,92],a:[88,75]},end:{t:-90,l1:[90,90],l2:[88,92],a:[92,-5]},
+  steps:['Stand on the middle of a towel and hold one end in each hand, palms up.','Curl up until your elbows bend to 90°, then pull up as hard as you can against the towel.','Hold for the time with your elbows pinned to your sides.'],
+  tip:'<b>Option:</b> swap to backpack curls if you have a bag and books.'},
+ bpcurl:{name:'Backpack curl',target:'Biceps',needs:'Backpack with books',sets:3,reps:'10-15',rest:45,hx:100,hl:['u','f'],go:['Curl',1],back:['Lower',2],
+  props:[{type:'pack',at:'w1',d:[2,6]}],
+  start:{t:-90,l1:[90,90],l2:[88,92],a:[90,85]},end:{t:-90,l1:[90,90],l2:[88,92],a:[95,-80]},
+  steps:['Hold a loaded backpack by its top handle or straps, arms straight, palms up.','Curl it up toward your shoulders, elbows pinned to your sides.','Lower slowly.'],
+  tip:'<b>Weight:</b> add books when 15 reps gets easy.'},
+
+ // ----- home legs -----
+ squat:{name:'Bodyweight squat',target:'Quads, glutes',sets:3,reps:'15-20',rest:60,hx:100,hl:['th','sh'],pin:'t1',go:['Lower',2],back:['Stand',1],
+  start:SQUAT_START,end:SQUAT_END,
+  steps:['Feet shoulder width apart, toes turned out a little, arms forward.','Sit your hips back and down until your thighs are about parallel to the floor. Chest up, knees over toes.','Stand up by pushing through your whole foot.'],
+  tip:'<b>Harder:</b> take 3 seconds on the way down, or swap to the backpack squat.'},
+ bpsquat:{name:'Backpack squat',target:'Quads, glutes',needs:'Backpack with books',sets:3,reps:'10-15',rest:60,hx:100,hl:['th','sh'],pin:'t1',go:['Lower',2],back:['Stand',1],
+  props:[{type:'pack',at:'w1',d:[8,4]}],
+  start:{...SQUAT_START,a:[60,-120]},end:{...SQUAT_END,a:[60,-120]},
+  steps:['Hug a loaded backpack against your chest.','Sit your hips back and down until your thighs are about parallel.','Stand up through your whole foot.'],
+  tip:'<b>Weight:</b> the bag makes a regular squat harder without changing the move.'},
+ bss:{name:'Bulgarian split squat',target:'Quads, glutes',sets:3,reps:'8-12',side:true,rest:60,hx:105,hl:['th','sh'],pin:'t1',fix:['f2'],go:['Lower',2],back:['Stand',1],
+  props:[{type:'box',at:'f2',w:26,d:[-4,0]}],
+  start:{t:-80,l1:[80,95],l2:[140,155],a:[90,90],fa2:175},end:{t:-75,l1:[5,100],l2:[105,-129],a:[90,90],fa2:175},
+  steps:['Stand about two steps in front of a bench or chair and rest the top of your back foot on it.','Lower straight down until your back knee almost touches the floor.','Push through your front heel to stand. Do all reps, then switch legs.'],
+  tip:'<b>Harder:</b> 3 seconds down. This one is tough, so start at the low end of the range.'},
+ revlunge:{name:'Reverse lunge',target:'Quads, glutes',sets:3,reps:'8-12',side:true,rest:60,hx:95,hl:['th','sh'],pin:'t1',go:['Step back, lower',2],back:['Stand up',1],
+  start:{t:-90,l:[90,90],a:[90,90]},end:{t:-85,l1:[5,100],l2:[100,-170],a:[90,90],fa2:60},
+  steps:['Stand tall with your feet together.','Step one foot back and lower until your back knee almost touches the floor.','Push through your front foot to step back to standing. Do all reps, then switch.'],
+  tip:'<b>Easier</b> on the knees than forward lunges. <b>Harder:</b> hold a backpack.'},
+ stepup:{name:'Step-up',vb:'0 -18 200 148',target:'Quads, glutes',sets:3,reps:'8-12',side:true,rest:60,hx:95,hl:['th','sh'],pin:'t1',go:['Step up',1],back:['Step down',2],
+  props:[{type:'box',at:'t1',w:30,d:[0,0]}],
+  start:{t:-75,l1:[10,95],l2:[100,95],a:[90,90]},end:{t:-88,l1:[88,92],l2:[60,100],a:[90,90]},
+  steps:['Stand facing a sturdy chair or step and put one whole foot on it.','Push through that foot to stand up on it. Don\'t push off the back foot.','Step down slowly with the same leg. Do all reps, then switch.'],
+  tip:'<b>Careful:</b> use a chair that can\'t slide, ideally against a wall.'},
+ bridge:{name:'Single-leg glute bridge',target:'Glutes, hamstrings',sets:3,reps:'10-15',side:true,rest:60,hx:104,hl:['th','tor'],pin:'t1',go:['Lift hips',1],back:['Lower',2],
+  start:{t:180,hd:180,l1:[-50,60],l2:[-40,-40],a:[0,0],fa2:-40,lift:3},end:{t:150,hd:180,l1:[-15,80],l2:[-30,-30],a:[0,0],fa2:-30,lift:3},
+  steps:['Lie on your back, one knee bent with that foot flat, the other leg straight.','Push through the planted heel and lift your hips until your body is straight from shoulders to knee.','Squeeze for 1 second at the top, lower slowly. Switch legs after the set.'],
+  tip:'<b>Easier:</b> keep both feet down.'},
+ hipthrust:{name:'Couch hip thrust',target:'Glutes',sets:3,reps:'12-15',rest:60,hx:95,hl:['th'],pin:'t1',go:['Lift hips',1],back:['Lower',2],
+  props:[{type:'box',at:'sh',w:34,d:[-14,0]}],
+  start:{t:-148,l:[-45,70],a:[150,180]},end:{t:178,l:[5,92],a:[150,180]},
+  steps:['Sit on the floor with your upper back against the edge of a couch, knees bent, feet flat.','Push through your heels and lift your hips until your body is flat from shoulders to knees.','Squeeze for 1 second, lower slowly.'],
+  tip:'<b>Harder:</b> one leg at a time, or a backpack on your hips.'},
+ slrdl:{name:'Single-leg Romanian deadlift',target:'Hamstrings, glutes',sets:3,reps:'8-12',side:true,rest:60,hx:100,hl:['th'],pin:'t1',go:['Hinge forward',2],back:['Stand tall',1],
+  start:{t:-90,l:[90,90],a:[90,90]},end:{t:-10,l1:[85,95],l2:[170,170],a:[90,90],fa2:170},
+  steps:['Stand on one leg with a slight bend in the knee.','Hinge at the hips, reaching your hands toward the floor while your other leg goes straight back. Keep your back flat.','Stop when your body is about level with the floor, then stand back up. Switch legs after the set.'],
+  tip:'<b>Easier:</b> lightly touch a wall for balance.'},
+ calf:{name:'Single-leg calf raise',target:'Calves',sets:3,reps:'12-20',side:true,rest:45,hx:100,hl:['sh'],pin:'t1',go:['Rise',1],back:['Lower',2],vb:'0 -18 200 148',
+  props:[{type:'box',at:'t1',w:34,d:[12,0]}],
+  start:{t:-90,l1:[90,90],l2:[95,-170],a:[20,10],fa1:-25,hy:48},end:{t:-90,l1:[90,90],l2:[95,-170],a:[20,10],fa1:50,hy:39},
+  steps:['Stand on a stair with the ball of one foot on the edge, heel hanging off. Hold a railing or wall.','Lower your heel below the step for a stretch.','Rise as high as you can on your toes, pause 1 second, lower slowly.'],
+  tip:'<b>Harder:</b> 3 seconds on the way down.'},
+ calf2:{name:'Calf raise on a step',target:'Calves',sets:3,reps:'15-25',rest:45,hx:100,hl:['sh'],pin:'t1',go:['Rise',1],back:['Lower',2],vb:'0 -18 200 148',
+  props:[{type:'box',at:'t1',w:34,d:[12,0]}],
+  start:{t:-90,l1:[90,90],l2:[88,92],a:[20,10],fa:-25,hy:48},end:{t:-90,l1:[90,90],l2:[88,92],a:[20,10],fa:50,hy:39},
+  steps:['Stand with the balls of both feet on the edge of a stair, heels hanging off. Hold the railing.','Lower your heels below the step.','Rise as high as you can, pause 1 second, lower slowly.'],
+  tip:'<b>Harder:</b> swap to single-leg raises.'},
+ wallsit:{name:'Wall sit',target:'Quads',sets:2,reps:'30-60',hold:true,rest:60,hx:117,hl:['th'],pin:'t1',go:['Slide down',1.5],back:['Stand',1],
+  props:[{type:'wall',at:'hip',dx:-11}],
+  start:{t:-90,l:[75,85],a:[90,90]},end:{t:-90,l:[0,90],a:[75,55]},
+  steps:['Back flat against a wall, feet about two feet out in front.','Slide down until your knees bend about 90°, knees over ankles.','Hold. Keep your back on the wall and breathe.'],
+  tip:'<b>Harder:</b> add 10 seconds each week.'},
+ tibraise:{name:'Tibialis raise',target:'Front of shins',sets:2,reps:'15-20',rest:45,hx:100,hl:['sh'],pin:'f1',go:['Lift toes',1],back:['Lower',1],
+  props:[{type:'wall',at:'sh',dx:-7}],
+  start:{t:-97,l:[72,80],a:[95,95],fa:0},end:{t:-97,l:[72,80],a:[95,95],fa:-40},
+  steps:['Lean your back against a wall with your feet about a foot out in front.','Keeping your heels down, lift your toes as high as you can.','Lower slowly and repeat.'],
+  tip:'<b>Works</b> the muscle on the front of your shin. <b>Harder:</b> walk your feet further out.'},
+
+ // ----- gym push -----
+ chestpress:{name:'Chest press machine',target:'Chest, shoulders, triceps',sets:3,reps:'8-12',rest:90,wt:true,hx:80,hl:['u','f'],go:['Press',1],back:['Return',2],
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',48,-74]}],
+  start:{t:-95,l:[0,90],a:[130,-15],hy:92},end:{t:-95,l:[0,90],a:[5,5],hy:92},
+  steps:['Set the seat so the handles line up with the middle of your chest.','Back flat on the pad, push forward until your arms are almost straight.','Return slowly until your hands are near your chest.'],
+  tip:'<b>Weight:</b> pick one where the last 2 reps are hard but your form stays clean.'},
+ inclinepress:{name:'Incline chest press machine',target:'Upper chest, shoulders',sets:3,reps:'8-12',rest:90,wt:true,hx:85,hl:['u','f'],go:['Press',1],back:['Return',2],
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',55,-20]}],
+  start:{t:-110,l:[0,90],a:[110,-30],hy:92},end:{t:-110,l:[0,90],a:[-40,-40],hy:92},
+  steps:['Set the seat so the handles start at your upper chest.','Back flat on the pad, press up and forward until your arms are almost straight.','Lower slowly.'],
+  tip:'<b>Weight:</b> a bit lighter than the flat chest press.'},
+ cablepress:{name:'Standing cable chest press',target:'Chest, shoulders, triceps',sets:3,reps:'10-12',rest:90,wt:true,hx:95,hl:['u','f'],go:['Press',1],back:['Return',2],
+  props:[{type:'cable',at:'w1',to:['sh',-45,0]}],
+  start:{t:-80,l1:[75,95],l2:[105,85],a:[150,0]},end:{t:-80,l1:[75,95],l2:[105,85],a:[5,5]},
+  steps:['Set both cables at chest height and stand in the middle with one foot forward.','Press the handles forward until your arms are almost straight.','Let them come back slowly until your hands are by your chest.'],
+  tip:'<b>Check:</b> don\'t let the cables pull your shoulders back past your chest.'},
+ shoulderpress:{name:'Shoulder press machine',target:'Shoulders, triceps',sets:3,reps:'8-12',rest:90,wt:true,hx:80,hl:['u','f'],go:['Press',1],back:['Lower',2],
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',46,-6]}],
+  start:{t:-95,l:[0,90],a:[100,-85],hy:92},end:{t:-95,l:[0,90],a:[-85,-85],hy:92},
+  steps:['Set the seat so the handles start at about shoulder height.','Back against the pad, press straight up until your arms are almost straight.','Lower slowly back to shoulder height.'],
+  tip:'<b>Weight:</b> start lighter than chest press. Shoulders are a smaller muscle.'},
+ frontraise:{name:'Cable front raise',target:'Front shoulders',sets:3,reps:'10-15',rest:60,wt:true,hx:85,hl:['u','f'],go:['Raise',1],back:['Lower',2],
+  props:[{type:'cable',at:'w1',to:['hip',-32,52]}],
+  start:{t:-90,l1:[85,95],l2:[95,85],a:[80,80]},end:{t:-90,l1:[85,95],l2:[95,85],a:[0,0]},
+  steps:['Stand facing away from a low cable with the handle between your legs.','With straight arms, raise the handle in front of you to shoulder height.','Lower slowly.'],
+  tip:'<b>Weight:</b> keep it light. No swinging.'},
+ dipmachine:{name:'Seated dip machine',target:'Triceps, chest',sets:3,reps:'10-12',rest:90,wt:true,hx:85,hl:['u','f'],go:['Push down',1],back:['Return',2],
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',-40,-22]}],
+  start:{t:-95,l:[0,90],a:[125,20],hy:92},end:{t:-95,l:[0,90],a:[92,92],hy:92},
+  steps:['Sit with your back on the pad and grab the handles at your sides.','Push the handles down until your arms are straight, elbows close to your body.','Let them rise slowly until your elbows bend to about 90°.'],
+  tip:'<b>Weight:</b> last 2 reps hard, no shrugging your shoulders up.'},
+ assistdip:{name:'Assisted dip machine',target:'Triceps, chest',sets:3,reps:'8-12',rest:90,wt:true,hx:100,hl:['u','f'],fix:['w1','w2'],go:['Lower',2],back:['Press up',1],
+  props:[{type:'pad',at:'k1',d:[-10,4],w:32,h:5},{type:'post',at:'w1'}],
+  start:{t:-88,l:[90,180],a:[92,92],fa:180,hy:60},end:{t:-80,l:[90,180],a:[160,80],fa:180,hy:76},
+  steps:['Set the assist weight (more weight makes it easier). Kneel on the pad and grip the handles.','Lower until your elbows bend to about 90°.','Press back up to straight arms.'],
+  tip:'<b>Progress:</b> lower the assist weight as you get stronger. In this one, a lower number is harder.'},
+ pushdown:{name:'Cable triceps pushdown',target:'Triceps',sets:3,reps:'10-15',rest:60,wt:true,hx:85,hl:['f'],go:['Push down',1],back:['Return',2],
+  props:[{type:'cable',at:'w1',to:['sh',30,-28]}],
+  start:{t:-80,l1:[85,95],l2:[95,85],a:[95,-30]},end:{t:-80,l1:[85,95],l2:[95,85],a:[95,85]},
+  steps:['Attach a rope or bar to a high cable. Face it with a slight forward lean.','Pin your elbows to your sides and push down until your arms are straight.','Let it rise slowly until your forearms are just above parallel.'],
+  tip:'<b>Check:</b> only your forearms move. If your elbows drift, the weight is too heavy.'},
+ ohext:{name:'Overhead cable extension',target:'Triceps',sets:3,reps:'10-15',rest:60,wt:true,hx:95,hl:['f'],go:['Extend',1],back:['Bend',2],
+  props:[{type:'cable',at:'w1',to:['sh',-40,-28]}],
+  start:{t:-65,l1:[60,100],l2:[110,85],a:[-55,165]},end:{t:-65,l1:[60,100],l2:[110,85],a:[-45,-45]},
+  steps:['Attach a rope to a cable, face away from it and hold the rope behind your head, elbows pointing forward.','Straighten your arms forward and up.','Bend your elbows slowly to bring the rope back behind your head.'],
+  tip:'<b>Check:</b> keep your elbows still. Only your forearms move.'},
+
+ // ----- gym pull -----
+ pulldown:{name:'Lat pulldown',target:'Lats, biceps',sets:3,reps:'8-12',rest:90,wt:true,hx:90,hl:['u','f'],go:['Pull down',1],back:['Let it rise',2],
+  props:[{type:'seat'},{type:'pad',at:'k1',d:[-2,-7],w:14,h:6},{type:'cable',at:'w1',to:['hip',10,-86]}],
+  start:{t:-95,l:[0,90],a:[-80,-80],hy:92},end:{t:-102,l:[0,90],a:[110,-75],hy:92},
+  steps:['Lock your legs under the thigh pad. Grab the bar a bit wider than your shoulders.','Lean back slightly and pull the bar to your upper chest, driving your elbows down.','Let the bar rise slowly until your arms are straight.'],
+  tip:'<b>Check:</b> no swinging your body to move the weight.'},
+ assistpull:{name:'Assisted pull-up',target:'Lats, biceps',sets:3,reps:'6-10',rest:90,wt:true,hx:100,hl:['u','f'],fix:['w1','w2'],go:['Pull up',1],back:['Lower',2],
+  props:[{type:'pad',at:'k1',d:[-10,4],w:32,h:5},{type:'hangbar',at:'w1'}],
+  start:{t:-90,l:[90,180],a:[-88,-88],fa:180,hy:80},end:{t:-92,l:[90,180],a:[100,-80],fa:180,hy:60},
+  steps:['Set the assist weight (more weight makes it easier). Kneel on the pad and grab the handles above you.','Pull until your chin is above your hands.','Lower slowly until your arms are straight.'],
+  tip:'<b>Progress:</b> lower the assist weight over time. Zero assist is a full pull-up.'},
+ cablerow:{name:'Seated cable row',target:'Mid back, biceps',sets:3,reps:'8-12',rest:90,wt:true,hx:62,hl:['u','f'],go:['Pull',1],back:['Reach',2],
+  props:[{type:'seat'},{type:'plate',at:'f1',d:[6,-4],ang:90,len:24},{type:'cable',at:'w1',to:['hip',74,4]}],
+  start:{t:-80,l:[-10,20],a:[5,5],fa:-70,hy:102},end:{t:-92,l:[-10,20],a:[150,10],fa:-70,hy:102},
+  steps:['Sit with your feet on the platform, knees slightly bent, and grab the handle.','Sit tall and pull the handle to your stomach, squeezing your shoulder blades together.','Reach forward slowly until your arms are straight, without rounding your back.'],
+  tip:'<b>Check:</b> keep your chest up. Your back moves a little, not a lot.'},
+ machinerow:{name:'Chest-supported row machine',target:'Mid back, biceps',sets:3,reps:'8-12',rest:90,wt:true,hx:75,hl:['u','f'],go:['Pull',1],back:['Reach',2],
+  props:[{type:'seat'},{type:'pad',at:'sh',d:[12,10],w:6,h:28},{type:'lever',at:'w1',pivot:['hip',58,-72]}],
+  start:{t:-80,l:[0,90],a:[2,2],hy:92},end:{t:-80,l:[0,90],a:[168,0],hy:92},
+  steps:['Set the seat so your chest rests on the pad and you can just reach the handles.','Pull the handles back, squeezing your shoulder blades together.','Let them go forward slowly until your arms are straight.'],
+  tip:'<b>Check:</b> keep your chest on the pad the whole time.'},
+ facepull:{name:'Cable face pull',target:'Rear shoulders, upper back',sets:3,reps:'12-15',rest:60,wt:true,hx:80,hl:['u','f'],go:['Pull',1],back:['Return',2],
+  props:[{type:'cable',at:'w1',to:['sh',64,-12]}],
+  start:{t:-90,l1:[80,95],l2:[100,85],a:[-8,-8]},end:{t:-90,l1:[80,95],l2:[100,85],a:[-160,-22]},
+  steps:['Set a rope on a cable at face height. Grab both ends, thumbs pointing back.','Step back until the cable is tight. Pull the rope toward your face, pulling the ends apart, elbows high.','Pause, then let it go forward slowly.'],
+  tip:'<b>Weight:</b> go light. This is about control, not load.'},
+ straightpull:{name:'Straight-arm pulldown',target:'Lats',sets:3,reps:'10-15',rest:60,wt:true,hx:85,hl:['u'],go:['Pull down',1],back:['Return',2],
+  props:[{type:'cable',at:'w1',to:['sh',42,-28]}],
+  start:{t:-72,l1:[80,95],l2:[95,85],a:[-50,-50]},end:{t:-72,l1:[80,95],l2:[95,85],a:[85,85]},
+  steps:['Attach a rope or bar to a high cable. Step back and hinge forward a little.','Keeping your arms straight, pull the handle down to your thighs.','Let it rise slowly back to eye level.'],
+  tip:'<b>Check:</b> arms stay straight. You should feel it under your armpits.'},
+ curlmachine:{name:'Biceps curl machine',target:'Biceps',sets:3,reps:'10-12',rest:60,wt:true,hx:80,hl:['f'],go:['Curl',1],back:['Lower',2],
+  props:[{type:'seat'},{type:'armpad'},{type:'handle',at:'w1'}],
+  start:{t:-80,l:[0,90],a:[45,45],hy:92},end:{t:-80,l:[0,90],a:[45,-80],hy:92},
+  steps:['Set the seat so your armpits rest on the top of the pad and your upper arms lie flat on it.','Curl the handle up toward your shoulders, upper arms staying on the pad.','Lower slowly until your arms are almost straight.'],
+  tip:'<b>Weight:</b> you said you curl about 40-50 lb. Start at 40 and go up 5 lb once you get 12 reps on every set.'},
+ cablecurl:{name:'Cable curl',target:'Biceps',sets:3,reps:'10-12',rest:60,wt:true,hx:85,hl:['f'],go:['Curl',1],back:['Lower',2],
+  props:[{type:'cable',at:'w1',to:['hip',42,52]}],
+  start:{t:-90,l1:[88,92],l2:[92,88],a:[90,85]},end:{t:-90,l1:[88,92],l2:[92,88],a:[92,-80]},
+  steps:['Attach a bar to a low cable and stand facing it, palms up.','Curl the bar up to your shoulders, elbows pinned to your sides.','Lower slowly.'],
+  tip:'<b>Weight:</b> pick one where the last 2 reps are hard without swinging.'},
+
+ // ----- gym legs -----
+ legpress:{name:'Leg press',target:'Quads, glutes',sets:3,reps:'8-12',rest:120,wt:true,hx:75,hl:['th','sh'],go:['Push',1],back:['Lower',2],
+  props:[{type:'seat',back:true,bo:[-4,4]},{type:'plate',at:'f1',d:[3,-1],ang:70,len:36}],
+  start:{t:-135,l:[-40,30],a:[45,20],fa:-110,hy:86},end:{t:-135,l:[-18,-12],a:[45,20],fa:-110,hy:86},
+  steps:['Back and hips flat on the pad, feet shoulder width in the middle of the platform.','Release the safety handles and lower until your knees bend about 90°.','Push through your whole foot until your legs are almost straight. Never lock your knees.'],
+  tip:'<b>Weight:</b> you said about 90-100 lb for legs. Leg press machines differ a lot, so start there and add weight while every rep stays clean.'},
+ hacksquat:{name:'Hack squat machine',target:'Quads, glutes',sets:3,reps:'8-12',rest:120,wt:true,hx:95,hl:['th','sh'],pin:'t1',go:['Lower',2],back:['Drive up',1],
+  props:[{type:'backpad',bo:[-6,2]}],
+  start:{t:-105,l:[80,95],a:[45,-120]},end:{t:-108,l:[12,105],a:[45,-120]},
+  steps:['Back against the pad and shoulders under the pads, feet shoulder width on the platform.','Release the safety and lower until your thighs are about parallel to the platform.','Push back up through your whole foot.'],
+  tip:'<b>Weight:</b> start lighter than your leg press weight.'},
+ legext:{name:'Leg extension',target:'Quads',sets:3,reps:'10-15',rest:90,wt:true,hx:85,hl:['sh'],go:['Extend',1],back:['Lower',2],
+  props:[{type:'seat',back:true},{type:'roller',at:'f1',d:[6,-3],d2:[-3,-6]}],
+  start:{t:-95,l:[0,90],a:[95,40],hy:84},end:{t:-95,l:[0,-5],a:[95,40],fa:-85,hy:84},
+  steps:['Sit with your back on the pad, knees at the edge of the seat, ankle pad on the front of your lower shins.','Straighten your legs until nearly straight and squeeze your thighs for a second.','Lower slowly to the start.'],
+  tip:'<b>Weight:</b> last 2 reps hard, no kicking the weight up.'},
+ legcurl:{name:'Seated leg curl',target:'Hamstrings',sets:3,reps:'10-15',rest:90,wt:true,hx:80,hl:['sh'],go:['Curl',1],back:['Return',2],
+  props:[{type:'seat',back:true},{type:'pad',at:'k1',d:[-3,-7],w:16,h:6},{type:'roller',at:'f1',d:[-1,6],d2:[-6,-2]}],
+  start:{t:-100,l:[0,0],a:[95,40],fa:-85,hy:84},end:{t:-100,l:[0,100],a:[95,40],fa:0,hy:84},
+  steps:['Sit with the pad behind your ankles and the thigh pad snug on top of your knees.','Bend your knees, pulling the pad down and back as far as you can.','Return slowly until your legs are straight.'],
+  tip:'<b>Weight:</b> start light. Hamstrings are usually weaker than quads.'},
+ lyingcurl:{name:'Lying leg curl',target:'Hamstrings',sets:3,reps:'10-15',rest:90,wt:true,hx:110,hl:['sh'],go:['Curl',1],back:['Lower',2],
+  props:[{type:'bench'},{type:'roller',at:'f1',d:[0,-6],d2:[5,-2]}],
+  start:{t:0,l:[180,180],a:[110,20],fa:100,hy:84},end:{t:0,l:[180,-70],a:[110,20],fa:10,hy:84},
+  steps:['Lie face down with the pad just above your heels and your knees just off the edge of the bench.','Curl your heels toward your glutes.','Lower slowly until your legs are straight.'],
+  tip:'<b>Check:</b> keep your hips down on the pad.'},
+ seatedcalf:{name:'Seated calf raise',target:'Calves',sets:3,reps:'12-20',rest:60,wt:true,hx:85,hl:['sh'],go:['Rise',1],back:['Lower',2],
+  props:[{type:'seat'},{type:'pad',at:'k1',d:[-3,-7],w:18,h:6},{type:'box',at:'t1',w:16,d:[2,0]}],
+  start:{t:-90,l:[0,90],a:[80,60],fa:-25,hy:80},end:{t:-90,l:[-19,92],a:[80,60],fa:40,hy:80},
+  steps:['Sit with the balls of your feet on the foot bar and the pad snug on your lower thighs.','Lower your heels as far as you can for a stretch.','Push up onto your toes as high as you can, pause 1 second, lower slowly.'],
+  tip:'<b>Weight:</b> calves like high reps. Full stretch every rep.'},
+ standcalf:{name:'Standing calf raise machine',target:'Calves',sets:3,reps:'10-15',rest:60,wt:true,hx:100,hl:['sh'],pin:'t1',go:['Rise',1],back:['Lower',2],vb:'0 -18 200 148',
+  props:[{type:'box',at:'t1',w:34,d:[12,0]},{type:'pad',at:'sh',d:[0,-6],w:16,h:6}],
+  start:{t:-90,l1:[90,90],l2:[88,92],a:[60,-110],fa:-25,hy:48},end:{t:-90,l1:[90,90],l2:[88,92],a:[60,-110],fa:50,hy:39},
+  steps:['Shoulders under the pads, balls of your feet on the edge of the block.','Lower your heels for a stretch.','Rise as high as you can, pause 1 second, lower slowly.'],
+  tip:'<b>Weight:</b> full range matters more than load here.'},
+ // ----- abs (every day) -----
+ crunch:{name:'Crunch',target:'Abs',sets:2,reps:'12-20',rest:30,hx:104,hl:['tor'],pin:'t1',go:['Curl up',1],back:['Lower',2],
+  start:{t:180,hd:180,l:[-50,60],a:[-160,20],lift:3},end:{t:-158,hd:-150,l:[-50,60],a:[-140,20],lift:3},
+  steps:['Lie on your back, knees bent, feet flat, fingertips lightly behind your ears.','Curl your shoulders off the floor by squeezing your stomach. Keep your chin off your chest.','Lower slowly.'],
+  tip:'<b>Check:</b> don\'t pull on your head. Your hands are only there to support it.'},
+ revcrunch:{name:'Reverse crunch',target:'Lower abs',sets:2,reps:'10-15',rest:30,hx:100,hl:['tor','th'],go:['Curl knees in',1],back:['Lower',2],
+  start:{t:180,hd:180,l:[-90,0],a:[0,0],lift:3},end:{t:172,hd:180,l:[-130,-30],a:[0,0],lift:3},
+  steps:['Lie on your back, arms by your sides, knees bent to 90° with your feet in the air.','Curl your hips off the floor, bringing your knees toward your chest.','Lower slowly until your hips touch down.'],
+  tip:'<b>Check:</b> use your stomach to lift your hips, not a swing of the legs.'},
+ legraise:{name:'Lying leg raise',target:'Lower abs',sets:2,reps:'10-15',rest:30,hx:100,hl:['th','tor'],go:['Raise legs',1],back:['Lower slowly',2],
+  start:{t:180,hd:180,l:[-8,-8],a:[10,0],lift:3},end:{t:180,hd:180,l:[-85,-85],a:[10,0],lift:3},
+  steps:['Lie on your back, legs straight, hands flat under your hips.','Keep your legs straight and raise them until they point at the ceiling.','Lower them slowly until they hover just above the floor.'],
+  tip:'<b>Easier:</b> bend your knees. <b>Check:</b> keep your lower back pressed into the floor.'},
+ climber:{name:'Mountain climber',target:'Abs, hip flexors',sets:2,reps:'20-30',rest:30,hx:110,hl:['th','tor'],pin:'t2',fix:['w1','w2'],go:['Knee in',.5],back:['Back',.5],pause:120,
+  start:{t:-26,l:[154,154],a:[90,90],fa:30},end:{t:-26,l1:[10,150],l2:[154,154],a:[90,90],fa:30},
+  steps:['Start at the top of a push-up, hands under your shoulders.','Drive one knee toward your chest, then switch legs quickly.','Keep your hips level and count each knee drive as one rep.'],
+  tip:'<b>Easier:</b> go slowly and step instead of switching quickly.'},
+ deadbug:{name:'Dead bug',target:'Deep abs',sets:2,reps:'8-10',side:true,rest:30,hx:100,hl:['tor'],go:['Reach out',2],back:['Return',1],
+  start:{t:180,hd:180,l:[-90,0],a:[-90,-90],fa:-90,lift:3},end:{t:180,hd:180,l1:[-90,0],l2:[-8,-8],a1:[-172,-172],a2:[-90,-90],fa1:-90,fa2:-8,lift:3},
+  steps:['Lie on your back, arms pointing at the ceiling, knees bent to 90° above your hips.','Slowly reach one arm overhead while straightening the opposite leg toward the floor.','Return and switch sides. Keep your lower back flat on the floor the whole time.'],
+  tip:'<b>Check:</b> move slowly. If your back arches, don\'t reach as far.'},
+ cablecrunch:{name:'Kneeling cable crunch',target:'Abs',sets:2,reps:'12-15',rest:45,wt:true,hx:85,hl:['tor'],pin:'k1',go:['Crunch down',1],back:['Return',2],
+  props:[{type:'cable',at:'w1',to:['k1',38,-112]}],
+  start:{t:-80,l:[90,180],a:[30,-120],fa:180},end:{t:-15,l:[90,180],a:[30,-120],fa:180},
+  steps:['Attach a rope to a high cable. Kneel facing it and hold the rope by your ears.','Crunch down, bringing your elbows toward your thighs. Your hips stay still.','Return slowly until your back is upright.'],
+  tip:'<b>Check:</b> curl your spine. Don\'t just bend at the hips.'},
+ abmachine:{name:'Ab crunch machine',target:'Abs',sets:2,reps:'12-15',rest:45,wt:true,hx:85,hl:['tor'],go:['Crunch',1],back:['Return',2],
+  props:[{type:'seat'},{type:'handle',at:'w1'}],
+  start:{t:-95,l:[0,90],a:[60,-120],hy:92},end:{t:-45,l:[0,90],a:[60,-120],hy:92},
+  steps:['Set the seat and grab the handles (or put the pads on your chest).','Crunch forward by curling your stomach, not by pulling with your arms.','Return slowly.'],
+  tip:'<b>Weight:</b> pick one where the last 2 reps are hard.'},
+ captain:{name:'Captain\'s chair knee raise',target:'Lower abs',sets:2,reps:'10-15',rest:45,hx:95,hl:['th','tor'],go:['Raise knees',1],back:['Lower',2],
+  props:[{type:'backpad',bo:[-6,0]},{type:'pad',at:'e1',d:[8,0],w:24,h:5}],
+  start:{t:-90,l:[90,90],a:[90,0],hy:60},end:{t:-90,l:[-15,95],a:[90,0],hy:60},
+  steps:['Back against the pad, forearms on the arm pads, legs hanging.','Raise your knees up toward your chest.','Lower slowly without swinging.'],
+  tip:'<b>Harder:</b> raise straight legs instead of bent knees.'},
+ hangraise:{name:'Hanging knee raise',target:'Lower abs, grip',sets:2,reps:'8-12',rest:45,hx:100,hl:['th','tor'],go:['Raise knees',1],back:['Lower',2],vb:'0 -16 200 146',
+  props:[{type:'hangbar',at:'w1'}],
+  start:{t:-90,l:[90,90],a:[-88,-88],hy:62},end:{t:-90,l:[-20,95],a:[-88,-88],hy:62},
+  steps:['Hang from a pull-up bar with straight arms.','Raise your knees toward your chest without swinging.','Lower slowly.'],
+  tip:'<b>Easier:</b> use the captain\'s chair if your grip gives out first.'},
+ abwheel:{name:'Ab wheel rollout',target:'Abs, core',sets:2,reps:'6-10',rest:45,hx:95,hl:['tor'],pin:'k1',go:['Roll out',2],back:['Roll back',1],
+  props:[{type:'roller',at:'w1',d:[0,3]}],
+  start:{t:-36,l:[90,180],a:[90,90],fa:180},end:{t:-5,l:[120,180],a:[30,30],fa:180},
+  steps:['Kneel on a mat holding the ab wheel under your shoulders.','Roll forward slowly, keeping your back flat, as far as you can control.','Pull the wheel back to the start using your stomach.'],
+  tip:'<b>Check:</b> stop before your lower back sags. Short and controlled beats long and sloppy.'},
+ jog:{name:'Easy jog',target:'',hx:100,hl:['th','sh'],go:['Stride',.38],back:['Stride',.38],pause:0,loopLabel:'Easy jog: you can still talk',
+  start:{t:-80,l1:[60,120],l2:[120,150],a1:[120,40],a2:[60,-40],hy:72},end:{t:-80,l1:[120,150],l2:[60,120],a1:[60,-40],a2:[120,40],hy:72},steps:[],tip:''}
+};
+// Each workout is a list of slots; the first exercise in a slot is the default, the rest are swaps.
+const PLAN={
+ push:{home:[['pushup','inclinepush','declinepush'],['pike','elevpike','bpress'],['chairdip','diamond','bpext']],
+       gym:[['chestpress','inclinepress','cablepress'],['shoulderpress','frontraise'],['dipmachine','assistdip'],['pushdown','ohext']]},
+ pull:{home:[['tablerow','broomrow'],['doorrow','bprow'],['yraise','framerow'],['superman','birddog'],['towelcurl','bpcurl']],
+       gym:[['pulldown','assistpull'],['cablerow','machinerow'],['facepull','straightpull'],['curlmachine','cablecurl']]},
+ abs:{home:[['crunch','revcrunch'],['legraise','climber','deadbug'],['plank','hollow']],
+      gym:[['cablecrunch','abmachine'],['captain','hangraise','legraise'],['abwheel','plank']]},
+ legs:{home:[['squat','bpsquat'],['bss','revlunge','stepup'],['bridge','hipthrust','slrdl'],['calf','calf2'],['wallsit','tibraise']],
+       gym:[['legpress','hacksquat'],['legext','bss'],['legcurl','lyingcurl'],['seatedcalf','standcalf','calf']]}
+};
+const SCHED=['rest','push','pull','legs','rest','push','pull']; // by getDay(): Sun..Sat
+const WARM={
+ push:'Warm up 5 minutes: arm circles, 20 jumping jacks, then one easy set of the first exercise.',
+ pull:'Warm up 5 minutes: arm circles, 20 jumping jacks, 10 slow shoulder rolls, then one easy set of the first exercise.',
+ legs:'Warm up 5 minutes: 10 leg swings each side, 20 jumping jacks, 10 slow bodyweight squats.'
+};
+const LABEL={push:'Push',pull:'Pull',legs:'Legs',rest:'Rest'};
+
+// ---------- stick figure ----------
+const FL=118, LEN={T:34,N:13,U:21,F:20,TH:26,SH:26,FT:8};
+const mv=(p,a,l)=>[p[0]+Math.cos(a*Math.PI/180)*l,p[1]+Math.sin(a*Math.PI/180)*l];
+function solve(pose,ex,shift){
+  const l1=pose.l1||pose.l,l2=pose.l2||l1,a1=pose.a1||pose.a,a2=pose.a2||a1;
+  const fa1=pose.fa1??pose.fa??0,fa2=pose.fa2??pose.fa??fa1;
+  const P={hip:[0,0]};
+  P.sh=mv(P.hip,pose.t,LEN.T);P.hd=mv(P.sh,pose.hd??pose.t,LEN.N);
+  P.k1=mv(P.hip,l1[0],LEN.TH);P.f1=mv(P.k1,l1[1],LEN.SH);P.t1=mv(P.f1,fa1,LEN.FT);
+  P.k2=mv(P.hip,l2[0],LEN.TH);P.f2=mv(P.k2,l2[1],LEN.SH);P.t2=mv(P.f2,fa2,LEN.FT);
+  P.e1=mv(P.sh,a1[0],LEN.U);P.w1=mv(P.e1,a1[1],LEN.F);
+  P.e2=mv(P.sh,a2[0],LEN.U);P.w2=mv(P.e2,a2[1],LEN.F);
+  let dx,dy;
+  if(shift)[dx,dy]=shift;
+  else{
+    dy=pose.hy!=null?pose.hy:FL-Math.max(...['hip','sh','k1','f1','t1','k2','f2','t2','e1','w1','e2','w2'].map(k=>P[k][1]))-(pose.lift||0);
+    dx=pose.hx??ex.hx??100;
+  }
+  for(const k in P)P[k]=[P[k][0]+dx,P[k][1]+dy];
+  Object.defineProperty(P,'s',{value:[dx,dy]});
+  return P;
+}
+const n=v=>Math.round(v*10)/10;
+const ln=(a,b,c,extra='')=>`<line x1="${n(a[0])}" y1="${n(a[1])}" x2="${n(b[0])}" y2="${n(b[1])}" class="${c}" ${extra}/>`;
+function props(ex,P,end){
+  return (ex.props||[]).map(pr=>{
+    const off=(end&&pr.d2)||pr.d||[0,0];
+    const p=pr.at?[P[pr.at][0]+off[0],P[pr.at][1]+off[1]]:null;
+    const rel=s=>[P[s[0]][0]+s[1],P[s[0]][1]+s[2]];
+    switch(pr.type){
+      case 'box':{const y=p[1]+3;return `<rect class="pf" x="${n(p[0]-pr.w/2)}" y="${n(y)}" width="${pr.w}" height="${n(Math.max(0,FL+3-y))}" rx="2"/>`}
+      case 'table':return `<rect class="pf" x="${n(p[0]-45)}" y="${n(p[1]-1)}" width="75" height="5" rx="1"/>`+ln([p[0]+26,p[1]+4],[p[0]+26,FL+3],'pl');
+      case 'door':{const x=p[0]+pr.dx,hy=FL-61;return `<rect class="pf" x="${n(x)}" y="${FL-108}" width="6" height="111"/><circle class="pdot" cx="${n(x-1)}" cy="${hy}" r="2.5"/>`+ln(P.w1,[x-1,hy],'towel')}
+      case 'towel':return ln(P[pr.at],P[pr.to],'towel');
+      case 'wall':{const x=p[0]+pr.dx;return `<rect class="pf" x="${n(x-6)}" y="${FL-112}" width="6" height="115"/>`}
+      case 'seat':{const h=P.hip,bo=pr.bo||[-6,0];return (pr.back?ln([h[0]+bo[0],h[1]+bo[1]],[P.sh[0]+bo[0],P.sh[1]+bo[1]],'pad'):'')+
+        `<rect class="pf" x="${n(h[0]-14)}" y="${n(h[1]+3)}" width="28" height="5" rx="2"/>`+ln([h[0],h[1]+8],[h[0],FL+3],'pl')}
+      case 'backpad':{const bo=pr.bo;return ln([P.hip[0]+bo[0],P.hip[1]+bo[1]],[P.sh[0]+bo[0],P.sh[1]+bo[1]],'pad')}
+      case 'bench':{const x0=Math.min(P.hip[0],P.sh[0])-6,x1=Math.max(P.hip[0],P.sh[0])+8,y=P.hip[1]+4;
+        return `<rect class="pf" x="${n(x0)}" y="${n(y)}" width="${n(x1-x0)}" height="5" rx="2"/>`+ln([x0+4,y+5],[x0+4,FL+3],'pl')+ln([x1-4,y+5],[x1-4,FL+3],'pl')}
+      case 'handle':return `<circle class="pdot" cx="${n(p[0])}" cy="${n(p[1])}" r="3.5"/>`;
+      case 'post':return ln([p[0],p[1]+3],[p[0],FL+3],'pl')+`<circle class="pdot" cx="${n(p[0])}" cy="${n(p[1])}" r="3.5"/>`;
+      case 'hangbar':return ln(p,[p[0]+22,-20],'pl')+`<circle class="pdot" cx="${n(p[0])}" cy="${n(p[1])}" r="3.5"/>`;
+      case 'pack':return `<rect class="pf" x="${n(p[0]-7)}" y="${n(p[1]-8)}" width="14" height="16" rx="4"/>`;
+      case 'lever':{const q=rel(pr.pivot);return ln(q,p,'pl')+`<circle class="pf" cx="${n(q[0])}" cy="${n(q[1])}" r="4"/><circle class="pdot" cx="${n(p[0])}" cy="${n(p[1])}" r="3.5"/>`}
+      case 'cable':{const q=rel(pr.to);return ln(p,q,'pthin')+`<circle class="pf" cx="${n(q[0])}" cy="${n(q[1])}" r="5"/><circle class="pdot" cx="${n(p[0])}" cy="${n(p[1])}" r="3.5"/>`}
+      case 'pad':return `<rect class="pf" x="${n(p[0]-pr.w/2)}" y="${n(p[1]-pr.h/2)}" width="${pr.w}" height="${pr.h}" rx="3"/>`;
+      case 'roller':return `<circle class="pf" cx="${n(p[0])}" cy="${n(p[1])}" r="5"/>`;
+      case 'plate':{const a=mv(p,pr.ang,pr.len/2),b=mv(p,pr.ang+180,pr.len/2);return ln(a,b,'pl','stroke-width="4"')}
+      case 'armpad':return ln([P.sh[0]-4,P.sh[1]+6],[P.e1[0]-4,P.e1[1]+6],'pad');
+    }
+    return '';
+  }).join('');
+}
+function figureP(ex,P,end){
+  const hl=new Set(ex.hl||[]);
+  const c=(k,far)=>'b'+(far?' far':'')+(hl.has(k)?' hl':'');
+  const neck=mv(P.sh,Math.atan2(P.hd[1]-P.sh[1],P.hd[0]-P.sh[0])*180/Math.PI,LEN.N-8);
+  return `<svg viewBox="${ex.vb||'0 0 200 130'}" role="img" aria-label="${ex.name} demonstration">
+  ${ln([-20,FL+4],[220,FL+4],'floor')}${props(ex,P,end)}
+  ${ln(P.hip,P.k2,c('th',1))}${ln(P.k2,P.f2,c('sh',1))}${ln(P.f2,P.t2,'b far')}
+  ${ln(P.sh,P.e2,c('u',1))}${ln(P.e2,P.w2,c('f',1))}
+  ${ln(P.hip,P.sh,c('tor'))}${ln(P.sh,neck,'b')}
+  ${ln(P.hip,P.k1,c('th'))}${ln(P.k1,P.f1,c('sh'))}${ln(P.f1,P.t1,'b')}
+  ${ln(P.sh,P.e1,c('u'))}${ln(P.e1,P.w1,c('f'))}
+  <circle class="head" cx="${n(P.hd[0])}" cy="${n(P.hd[1])}" r="8.5"/></svg>`;
+}
+
+// ---------- animation ----------
+function norm(p){ // spell every field out so two poses can be blended
+  const l1=p.l1||p.l,a1=p.a1||p.a,fa1=p.fa1??p.fa??0;
+  return {t:p.t,hd:p.hd??p.t,l1,l2:p.l2||l1,a1,a2:p.a2||a1,fa1,fa2:p.fa2??p.fa??fa1,hy:p.hy,hx:p.hx,lift:p.lift||0};
+}
+const ANG=new Set(['t','hd','l1','l2','a1','a2','fa1','fa2']);
+function blend(A,B,u){
+  const o={};
+  for(const k in A){
+    const a=A[k],b=B[k];
+    if(a==null||b==null){o[k]=a??b;continue}
+    const mix=(x,y)=>{if(!ANG.has(k))return x+(y-x)*u;const d=((y-x)%360+540)%360-180;return x+d*u}; // shortest way round
+    o[k]=Array.isArray(a)?a.map((x,i)=>mix(x,b[i])):mix(a,b);
+  }
+  return o;
+}
+const CH={w1:['sh','e1',LEN.U,LEN.F],w2:['sh','e2',LEN.U,LEN.F],f1:['hip','k1',LEN.TH,LEN.SH],f2:['hip','k2',LEN.TH,LEN.SH]};
+const TOE={f1:['t1','fa1'],f2:['t2','fa2']};
+function ik(R,T,a,b,bend){
+  const vx=T[0]-R[0],vy=T[1]-R[1],base=Math.atan2(vy,vx);
+  const d=Math.min(Math.max(Math.hypot(vx,vy),Math.abs(a-b)+.01),a+b-.01);
+  const ang=Math.acos((a*a+d*d-b*b)/(2*a*d))*bend;
+  return [[R[0]+a*Math.cos(base+ang),R[1]+a*Math.sin(base+ang)],[R[0]+d*Math.cos(base),R[1]+d*Math.sin(base)]];
+}
+function prep(ex){
+  const r={ex,A:norm(ex.start),B:norm(ex.end),PS:solve(ex.start,ex),PE:solve(ex.end,ex),bend:{}};
+  (ex.fix||[]).forEach(k=>{ // bend the elbow/knee the same way as in the more bent pose
+    const [R,J]=CH[k],dist=P=>Math.hypot(P[k][0]-P[R][0],P[k][1]-P[R][1]);
+    const P=dist(r.PS)<dist(r.PE)?r.PS:r.PE,cr=(P[k][0]-P[R][0])*(P[J][1]-P[R][1])-(P[k][1]-P[R][1])*(P[J][0]-P[R][0]);
+    r.bend[k]=cr>=0?1:-1;
+  });
+  return r;
+}
+function solveAt(r,u){
+  const ex=r.ex,pose=blend(r.A,r.B,u),lp=(x,y)=>x+(y-x)*u;
+  let shift;
+  if(ex.pin){const raw=solve(pose,ex,[0,0]);shift=[r.PS[ex.pin][0]-raw[ex.pin][0],r.PS[ex.pin][1]-raw[ex.pin][1]]}
+  else shift=[lp(r.PS.s[0],r.PE.s[0]),lp(r.PS.s[1],r.PE.s[1])];
+  const P=solve(pose,ex,shift);
+  (ex.fix||[]).forEach(k=>{
+    const [R,J,a,b]=CH[k];
+    [P[J],P[k]]=ik(P[R],r.PS[k],a,b,r.bend[k]);
+    if(TOE[k])P[TOE[k][0]]=mv(P[k],pose[TOE[k][1]],LEN.FT);
+  });
+  ['f1','f2'].forEach(k=>{ // a swinging leg mid-move: bend the knee (forward) instead of going through the floor
+    if((ex.fix||[]).includes(k))return;
+    const [tk,fk]=TOE[k],over=Math.max(P[k][1],P[tk][1])-FL;
+    if(over<=1)return;
+    const [R,J,a,b]=CH[k],T=[P[k][0],P[k][1]-over],A=ik(P[R],T,a,b,1),B=ik(P[R],T,a,b,-1),[Jn,Fn]=A[0][0]>=B[0][0]?A:B;
+    P[J]=Jn;P[k]=Fn;P[tk]=mv(Fn,pose[fk],LEN.FT);
+  });
+  return P;
+}
+const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+function frameAt(ex,ms){ // one rep: go, pause (or hold), back, pause
+  const g=ex.go[1]*1000,b=ex.back[1]*1000,top=ex.hold?2500:(ex.pause??500),bot=ex.pause??500,t=ms%(g+top+b+bot);
+  const lab=x=>ex.loopLabel||x;
+  if(t<g)return [ease(t/g),lab(`${ex.go[0]} (${ex.go[1]} s)`)];
+  if(t<g+top)return [1,lab(ex.hold?'Hold':'Pause')];
+  if(t<g+top+b)return [1-ease((t-g-top)/b),lab(`${ex.back[0]} (${ex.back[1]} s)`)];
+  return [0,lab('Pause')];
+}
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let runs=[],io=null;
+function drawRun(r,now){
+  if(!r.paused)r.at=now-r.t0;
+  const [u,label]=frameAt(r.ex,r.at);
+  r.el.innerHTML=figureP(r.ex,solveAt(r,u),u>.5);
+  r.ph.textContent=label;r.tr.style.width=(u*100)+'%';
+}
+function setupAnim(){
+  io?.disconnect();
+  io=new IntersectionObserver(es=>es.forEach(e=>{const r=runs[+e.target.dataset.run];if(r)r.vis=e.isIntersecting}),{rootMargin:'120px'});
+  const now=performance.now();
+  runs=[...document.querySelectorAll('.stage')].map((el,i)=>{
+    const r=Object.assign(prep(E[el.dataset.ex]),{el,ph:document.getElementById('ph-'+el.dataset.slot),tr:document.getElementById('tr-'+el.dataset.slot),t0:now,at:0,paused:RM,vis:true});
+    el.dataset.run=i;io.observe(el);drawRun(r,now);
+    return r;
+  });
+}
+(function loop(now){runs.forEach(r=>{if(r.vis&&!r.paused)drawRun(r,now)});requestAnimationFrame(loop)})(performance.now());
+
+// ---------- storage: synced db when available, this browser otherwise ----------
+const LS='ppl-logs-v1',LSM='ppl-mode',LSP='ppl-prefs';
+const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const isDate=k=>/^\d{4}-\d\d-\d\d$/.test(k);
+let logs=lsGet(LS)||{},prefs=lsGet(LSP)||{slots:{}},db=null,uid=null,col=null,pendingRender=false;
+const dirty={},chains={},timers={};
+const statusEl=document.getElementById('status');
+function setStatus(s){
+  const m={sync:['ok','Synced to your account'],saving:['','Saving'],local:['','Saved on this device only'],err:['err','Could not sync. Saved on this device.']}[s];
+  statusEl.className='status '+m[0];statusEl.textContent=m[1];
+}
+async function connect(){
+  if(!window.claude?.use){setStatus('local');return}
+  try{
+    const [d,u]=await Promise.all([claude.use('db'),claude.use('user')]);
+    uid=u?await u.id():null;
+    if(!d||!uid){setStatus('local');return}
+    db=d;col=db.collection('data/users/'+uid);setStatus('sync');
+    col.onSnapshot(snap=>{
+      const next={};let nextPrefs=null;
+      snap.docs.forEach(doc=>{const v=JSON.parse(JSON.stringify(doc.data())); // snapshot data is frozen; keep an editable copy
+        if(doc.id==='prefs')nextPrefs=v;else next[doc.id]=v});
+      for(const k in logs){
+        if(dirty[k])next[k]=logs[k];
+        else if(!(k in next)&&!snap.metadata.fromCache){next[k]=logs[k];queueSave(k)} // device-only logs move to the account
+      }
+      if(!dirty.prefs){
+        if(nextPrefs)prefs={slots:{},...nextPrefs};
+        else if(!snap.metadata.fromCache&&Object.keys(prefs.slots||{}).length)queueSave('prefs');
+      }
+      logs=next;lsSet(LS,logs);lsSet(LSP,prefs);
+      if(document.activeElement?.matches('input[type=number]'))pendingRender=true;else render();
+    },()=>setStatus('err'));
+  }catch(e){setStatus('local')}
+}
+function queueSave(k){
+  dirty[k]=(dirty[k]||0)+1;lsSet(LS,logs);lsSet(LSP,prefs);
+  if(!db){delete dirty[k];return}
+  setStatus('saving');clearTimeout(timers[k]);
+  timers[k]=setTimeout(()=>{
+    const v=dirty[k],body=JSON.parse(JSON.stringify(k==='prefs'?prefs:logs[k]));
+    chains[k]=(chains[k]||Promise.resolve()).then(()=>col.doc(k).set(body)).then(()=>{
+      if(dirty[k]===v)delete dirty[k];
+      setStatus(Object.keys(dirty).length?'saving':'sync');
+    }).catch(()=>setStatus('err'));
+  },700);
+}
+document.addEventListener('focusout',()=>{if(pendingRender)setTimeout(()=>{if(!document.activeElement?.matches('input[type=number]'))render()},0)});
+
+// ---------- dates ----------
+const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(k,n)=>{const d=parse(k);d.setDate(d.getDate()+n);return key(d)};
+const today=key(new Date());
+let sel=today,openSlot=null;
+const modeFor=k=>logs[k]?.mode||lsGet(LSM)||'home';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hasData=(k,id)=>logs[k]?.sets?.[id]?.some(s=>s.r!==''||s.d);
+
+// Which exercise fills each slot on a date: what you logged that day, else your saved pick, else the default.
+function chosen(k,type,mode){
+  return PLAN[type][mode].map((slot,i)=>{
+    const logged=slot.find(id=>hasData(k,id));
+    if(logged)return logged;
+    const pick=prefs.slots?.[`${type}-${mode}-${i}`];
+    return slot.includes(pick)?pick:slot[0];
+  });
+}
+function setsFor(k,id){
+  const ex=E[id];
+  return logs[k]?.sets?.[id]||Array.from({length:ex.sets},()=>({r:'',w:'',d:false}));
+}
+function lastTime(id){
+  const k=Object.keys(logs).filter(x=>isDate(x)&&x<sel&&logs[x].sets?.[id]?.some(s=>s.r!=='')).sort().pop();
+  if(!k)return '';
+  const ex=E[id],s=logs[k].sets[id].filter(s=>s.r!=='');
+  const d=parse(k).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  return `Last time (${d}): `+s.map(x=>ex.wt&&x.w!==''?`${x.r}×${x.w} lb`:x.r+(ex.hold?'s':'')).join(', ');
+}
+const groups=type=>type==='rest'?['abs']:[type,'abs'];
+function progress(k,type,mode){
+  let done=0,total=0;
+  groups(type).forEach(g=>chosen(k,g,mode).forEach(id=>{const s=setsFor(k,id);total+=s.length;done+=s.filter(x=>x.d).length}));
+  return [done,total];
+}
+const didAnything=k=>{const l=logs[k];return !!(l&&(l.run?.done||progress(k,l.day||SCHED[parse(k).getDay()],l.mode||'home')[0]>0))};
+
+// ---------- running: NHS Couch to 5K (nhs.uk running plan) ----------
+const RUN_DAYS=[0,2,4]; // Sun, Tue, Thu
+const alt=(run,walk,times)=>[...Array(times)].flatMap((_,i)=>i<times-1?[['Jog',run],['Walk',walk]]:[['Jog',run]]);
+const seq=(...v)=>v.map((x,i)=>[i%2?'Walk':'Jog',x]);
+const C25K=[ // per week: one interval list for all 3 runs, or one per run (seconds)
+ [alt(60,90,8)],[alt(90,120,6)],[seq(90,90,180,180,90,90,180)],[seq(180,90,300,150,180,90,300)],
+ [seq(300,180,300,180,300),seq(480,300,480),seq(1200)],
+ [seq(300,180,480,180,300),seq(600,180,600),seq(1500)],
+ [seq(1500)],[seq(1680)],[seq(1800)]
+];
+const runPlan=i=>{const w=Math.floor(i/3),r=i%3,mid=C25K[w][r]||C25K[w][0];return {week:w+1,run:r+1,mid,segs:[['Warm-up walk',300],...mid,['Cool-down walk',300]]}};
+const PACE={jog:13,walk:18}; // assumed minutes per mile, only for the rough distance
+const estMiles=segs=>segs.reduce((m,[k,s])=>m+s/60/(k==='Jog'?PACE.jog:PACE.walk),0);
+const km=mi=>mi*1.609344;
+const dist=mi=>`${mi.toFixed(1)} mi (${km(mi).toFixed(1)} km)`;
+const mmss=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+const dur=s=>s<60?`${s} s`:s%60?`${Math.floor(s/60)} min ${s%60} s`:`${s/60} min`;
+function runIndex(k){ // your place in the plan = runs ticked done before this day, plus any back/skip
+  const done=Object.keys(logs).filter(x=>isDate(x)&&x<k&&logs[x].run?.done).length;
+  return Math.min(26,Math.max(0,done+(prefs.runAdj||0)));
+}
+// ---------- time estimates ----------
+// One exercise: middle of the rep range at the animation's tempo (or the middle hold time), every set, rests between sets.
+const midReps=r=>{const [a,b]=String(r).split('-').map(Number);return (a+(b||a))/2};
+function exSeconds(id){
+  const ex=E[id],m=midReps(ex.reps),rep=ex.go[1]+ex.back[1]+2*(ex.pause??500)/1000;
+  let set=ex.hold?m+3:m*rep;
+  if(ex.side)set=set*2+10; // both sides plus switching
+  return ex.sets*set+(ex.sets-1)*ex.rest;
+}
+// A section: its exercises, one rest-length break between exercises, plus the warm-up on lift days.
+const sectionSeconds=(ids,warmup)=>ids.reduce((s,id,i)=>s+exSeconds(id)+(i<ids.length-1?E[id].rest:0),0)+(warmup?300:0);
+const runSeconds=k=>runPlan(runIndex(k)).segs.reduce((a,x)=>a+x[1],0);
+const mins=s=>`${Math.max(1,Math.round(s/60))} min`;
+function summarize(mid){
+  const jogs=mid.filter(x=>x[0]==='Jog'),walks=mid.filter(x=>x[0]==='Walk');
+  if(mid.length===1)return `Jog ${dur(mid[0][1])} without stopping`;
+  if(jogs.length>2&&new Set(jogs.map(x=>x[1])).size===1&&new Set(walks.map(x=>x[1])).size===1)
+    return `${jogs.length} jogs of ${dur(jogs[0][1])}, with ${dur(walks[0][1])} walks between`;
+  return mid.map(([k,v])=>`${k} ${dur(v)}`).join(', ');
+}
+function runCard(){
+  const p=runPlan(runIndex(sel)),total=p.segs.reduce((a,x)=>a+x[1],0),mi=estMiles(p.segs),log=logs[sel]?.run||{};
+  return `<article class="card">
+    <div class="card-h"><div><h3>Week ${p.week} · Run ${p.run} of 3</h3><div class="target">Couch to 5K run/walk · ${Math.round(total/60)} min including warm-up and cool-down</div></div></div>
+    <div class="rx"><span class="chip main">${summarize(p.mid)}</span><span class="chip">About ${dist(mi)}</span></div>
+    <div class="timeline" aria-hidden="true">${p.segs.map(([k,v])=>`<i class="${k==='Jog'?'jog':''}" style="flex:${v}"></i>`).join('')}</div>
+    <div class="rt"><div class="rt-main"><b id="rt-kind">Ready</b><span id="rt-left">${mmss(total)}</span></div>
+      <div class="rt-sub" id="rt-next"></div><button class="restbtn" id="rt-btn" data-runtimer="1">Start run timer</button></div>
+    <div class="stage" data-ex="jog" data-slot="run"></div>
+    <div class="phase"><b id="ph-run"></b><span><button class="restbtn" data-play="run">${RM?'Play':'Pause'}</button></span></div>
+    <div class="track"><div id="tr-run"></div></div>
+    <ol class="steps"><li>Walk briskly for 5 minutes to warm up.</li><li>Follow the jog and walk intervals (the colored blocks above are jogs). Jog slowly enough that you could talk in short sentences.</li><li>Walk for 5 minutes to cool down.</li></ol>
+    <p class="tip"><b>Distance:</b> about ${dist(mi)}. That's a rough estimate assuming a ${PACE.jog} min/mile jog and an ${PACE.walk} min/mile walk. For now, time matters more than distance. The plan ends at 30 minutes of nonstop jogging and is named after 5 km (3.1 mi).</p>
+    <div class="runlog"><label for="run-done"><input type="checkbox" id="run-done" data-run="done" ${log.done?'checked':''}> Done</label>
+      <label for="run-mi">Distance</label><input type="number" inputmode="decimal" step="0.01" min="0" id="run-mi" data-run="mi" placeholder="mi" value="${esc(log.mi)}"><span id="run-km">${log.mi?`mi = ${km(+log.mi).toFixed(2)} km`:'miles (optional)'}</span></div>
+    <div class="foot"><span class="last">If a run felt too hard, repeat the week. That's normal.</span><span><button class="navbtn" data-runadj="-3">Back a week</button> <button class="navbtn" data-runadj="3">Skip ahead</button></span></div>
+  </article>`;
+}
+// Interval timer. It works from the clock, so it shows the right interval again as soon as the page is back on screen.
+let rt=null,actx=null,wake=null;
+function beep(){
+  try{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.value=.25;o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.3)}catch(e){}
+  try{navigator.vibrate?.(300)}catch(e){}
+}
+function startRunTimer(){
+  rt={segs:runPlan(runIndex(sel)).segs,t0:Date.now(),cur:-1};
+  try{actx=actx||new AudioContext();actx.resume()}catch(e){}
+  try{navigator.wakeLock?.request('screen').then(w=>wake=w).catch(()=>{})}catch(e){}
+  rtTick();rt.int=setInterval(rtTick,250);
+}
+function stopRunTimer(){clearInterval(rt?.int);rt=null;try{wake?.release()}catch(e){}wake=null;rtPaint()}
+function rtTick(){
+  if(!rt||rt.done)return rtPaint();
+  let e=(Date.now()-rt.t0)/1000,i=0;
+  while(i<rt.segs.length&&e>=rt.segs[i][1]){e-=rt.segs[i][1];i++}
+  if(i!==rt.cur){if(rt.cur>=0)beep();rt.cur=i}
+  if(i>=rt.segs.length){rt.done=true;clearInterval(rt.int);return rtPaint()}
+  rtPaint(i,e);
+}
+function rtPaint(i,e){
+  const K=document.getElementById('rt-kind');if(!K)return;
+  const L=document.getElementById('rt-left'),N=document.getElementById('rt-next'),B=document.getElementById('rt-btn');
+  if(!rt){const p=runPlan(runIndex(sel));K.textContent='Ready';L.textContent=mmss(p.segs.reduce((a,x)=>a+x[1],0));
+    N.textContent='Start it when you head out. It beeps when it\'s time to switch.';B.textContent='Start run timer';return}
+  if(rt.done){K.textContent='Finished';L.textContent='0:00';N.textContent='Nice work. Tick Done below.';B.textContent='Close timer';return}
+  if(i==null)return;
+  const [kind,len]=rt.segs[i],nx=rt.segs[i+1];
+  K.textContent=kind;L.textContent=mmss(Math.ceil(len-e));N.textContent=nx?`Next: ${nx[0].toLowerCase()} ${dur(nx[1])}`:'Last part';B.textContent='Stop';
+}
+
+// ---------- render ----------
+const app=document.getElementById('app');
+function render(){
+  pendingRender=false;
+  const d=parse(sel),type=SCHED[d.getDay()],mode=modeFor(sel),runDay=RUN_DAYS.includes(d.getDay());
+  app.className='wrap d-'+type;
+  const mon=addDays(sel,-((d.getDay()+6)%7));
+  const days=[...Array(7)].map((_,i)=>addDays(mon,i));
+  const fmt=k=>parse(k).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+  document.getElementById('weeklabel').textContent=`${fmt(days[0])} to ${fmt(days[6])}`;
+  document.getElementById('week').innerHTML=days.map(k=>{
+    const dd=parse(k),t=SCHED[dd.getDay()],run=RUN_DAYS.includes(dd.getDay());
+    return `<button class="wd d-${t}${k===sel?' sel':''}${k===today?' today':''}${didAnything(k)?' logged':''}" data-date="${k}" aria-pressed="${k===sel}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}, ${LABEL[t]}${run?' and run':''}">
+      <small>${dd.toLocaleDateString(undefined,{weekday:'short'})}</small><b>${dd.getDate()}</b><i>${LABEL[t]}</i><i>${run?'+ Run':'&nbsp;'}</i></button>`}).join('');
+  const long=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const [done,total]=progress(sel,type,mode);
+  const liftIds=type==='rest'?[]:chosen(sel,type,mode),absIds=chosen(sel,'abs',mode);
+  const tLift=type==='rest'?0:sectionSeconds(liftIds,true),tAbs=sectionSeconds(absIds,false),tRun=runDay?runSeconds(sel):0;
+  const parts=[tLift&&`${LABEL[type]} ${mins(tLift)}`,`abs ${mins(tAbs)}`,tRun&&`run ${mins(tRun)}`].filter(Boolean).join(' + ');
+  document.getElementById('dayhead').innerHTML=`<div class="dayrow"><div><h2>${LABEL[type]}${runDay?' + Run':''}</h2><div class="date">${long}${sel===today?' · Today':''}</div></div>
+      <div class="seg" role="group" aria-label="Where are you training">
+        <button data-mode="home" aria-pressed="${mode==='home'}">Home</button><button data-mode="gym" aria-pressed="${mode==='gym'}">Gym</button></div></div>
+      <div class="meta"><span>About <strong>${[tLift,tAbs,tRun].filter(Boolean).reduce((a,s)=>a+parseInt(mins(s)),0)} min</strong> today (${parts}), breaks included</span><span><strong id="donec">${done} / ${total}</strong> sets done</span>${runDay?`<span>Run: <strong>${logs[sel]?.run?.done?'done':'to do'}</strong></span>`:''}
+      ${sel!==today?'<button class="navbtn" data-date="'+today+'">Back to today</button>':''}</div>
+      <div class="bar"><div id="donebar" style="width:${total?done/total*100:0}%"></div></div>
+      ${type!=='rest'?`<p class="note">${WARM[type]} Each exercise has a rep range. When you reach the top of it on every set, make it harder next time: add 5 lb at the gym, or swap to the harder version at home.</p>`:''}`;
+  let html='';
+  if(type==='rest')html+=`<div class="restday"><p>No lifting today. Muscles grow while you recover, so this day matters as much as the workouts.</p>
+      <p class="note">Abs${runDay?' and your run':''} are still on, and they're short. Tennis or badminton is fine too. If your legs are sore from Wednesday, take it easy on court.</p></div>`;
+  else html+=`<h3 class="sec">${LABEL[type]} workout <small>${liftIds.length} exercises · about ${mins(tLift)} with warm-up and breaks</small></h3>`+liftIds.map((id,i)=>card(id,i,type,mode)).join('');
+  const absHtml=`<h3 class="sec">Abs <small>3 exercises · every day · about ${mins(tAbs)} with breaks</small></h3>`+absIds.map((id,i)=>card(id,i,'abs',mode)).join('');
+  const runHtml=runDay?`<h3 class="sec">Run <small>Tue, Thu and Sun · ${mins(tRun)} with warm-up and cool-down walks</small></h3>`+runCard():'';
+  html+=type==='rest'?runHtml+absHtml:absHtml+runHtml; // rest days: run first
+  document.getElementById('list').innerHTML=html;
+  setupAnim();rt?rtTick():rtPaint();
+  const hk=Object.keys(logs).filter(k=>isDate(k)&&didAnything(k)).sort().reverse().slice(0,10);
+  document.getElementById('hist').innerHTML=`<h3>Recent workouts</h3>`+(hk.length?hk.map(k=>{
+    const t=logs[k].day||SCHED[parse(k).getDay()],m=logs[k].mode||'home',[dn,tt]=progress(k,t,m);
+    return `<button class="hrow d-${t}" data-date="${k}"><span><b>${LABEL[t]}</b>${logs[k].run?.done?' + Run':''} · ${m==='gym'?'Gym':'Home'} · ${parse(k).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</span><span>${dn}/${tt} sets</span></button>`}).join('')
+    :'<p class="empty">Nothing logged yet. Tick off a set and it shows up here.</p>');
+}
+function card(id,i,type,mode){
+  const ex=E[id],sets=setsFor(sel,id),unit=ex.hold?'sec':'reps',slot=PLAN[type][mode][i],sk=`${type}-${mode}-${i}`,open=openSlot===sk;
+  const locked=hasData(sel,id);
+  const rows=sets.map((s,j)=>`<div class="row${s.d?' done':''}">
+    <label class="sn" for="r-${id}-${j}">Set ${j+1}</label>
+    <input type="number" inputmode="numeric" min="0" id="r-${id}-${j}" data-ex="${id}" data-i="${j}" data-f="r" value="${esc(s.r)}" placeholder="${ex.reps.split('-')[0]}" aria-label="Set ${j+1} ${unit}">
+    ${ex.wt?`<input type="number" inputmode="decimal" min="0" step="2.5" id="w-${id}-${j}" data-ex="${id}" data-i="${j}" data-f="w" value="${esc(s.w)}" placeholder="lb" aria-label="Set ${j+1} weight in pounds">`:''}
+    <input type="checkbox" id="d-${id}-${j}" data-ex="${id}" data-i="${j}" data-f="d" ${s.d?'checked':''} aria-label="Set ${j+1} done"></div>`).join('');
+  const alts=open?`<div class="alts" id="alts-${sk}"><p>${locked?'You already logged sets for this exercise today. Clear them to switch.':'Same muscles, different exercise. Your pick is remembered.'}</p>${slot.map(x=>{const a=E[x];
+    return `<button class="alt" data-pick="${x}" data-slot="${sk}" aria-pressed="${x===id}" ${locked&&x!==id?'disabled':''}><span><b>${a.name}</b><small>${a.target}${a.needs?' · Needs: '+a.needs:''}</small></span>${x===id?'<em>Current</em>':''}</button>`}).join('')}</div>`:'';
+  const yt='https://www.youtube.com/results?search_query='+encodeURIComponent(ex.name+' exercise form');
+  return `<article class="card">
+    <div class="card-h"><span class="num">${i+1}</span><div><h3>${ex.name}</h3><div class="target">${ex.target}</div></div>
+      ${slot.length>1?`<button class="swapbtn" data-swap="${sk}" aria-expanded="${open}" aria-controls="alts-${sk}">Swap (${slot.length-1})</button>`:''}</div>
+    ${alts}
+    <div class="rx"><span class="chip main">${ex.sets} sets × ${ex.reps} ${unit}${ex.side?' each side':''}</span><span class="chip">Rest ${ex.rest}s</span><span class="chip">About ${mins(exSeconds(id))}</span>${ex.needs?`<span class="chip needs">Needs: ${ex.needs}</span>`:''}</div>
+    <div class="stage" data-ex="${id}" data-slot="${sk}"></div>
+    <div class="phase"><b id="ph-${sk}"></b><span><a class="vid" href="${yt}" target="_blank" rel="noopener">Watch a video &#8599;</a><button class="restbtn" data-play="${sk}">${RM?'Play':'Pause'}</button></span></div>
+    <div class="track"><div id="tr-${sk}"></div></div>
+    <ol class="steps">${ex.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    <p class="tip">${ex.tip}</p>
+    <div class="log${ex.wt?'':' nowt'}"><div class="log-h"><span></span><span>${ex.hold?'Seconds':'Reps'}</span>${ex.wt?'<span>Weight (lb)</span>':''}<span style="text-align:center">Done</span></div>${rows}</div>
+    <div class="foot"><span class="last">${lastTime(id)||'First time doing this one.'}</span><button class="restbtn" data-rest="${ex.rest}">Start ${ex.rest}s rest</button></div>
+  </article>`;
+}
+
+// ---------- events ----------
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-date],[data-week],[data-mode],[data-rest],[data-swap],[data-pick],[data-play],[data-runtimer],[data-runadj]');if(!b)return;
+  if(b.dataset.runtimer){rt?stopRunTimer():startRunTimer();return}
+  if(b.dataset.runadj){prefs.runAdj=(prefs.runAdj||0)+(+b.dataset.runadj);queueSave('prefs');render();return}
+  if(b.dataset.date){sel=b.dataset.date;openSlot=null;render();window.scrollTo({top:0})}
+  else if(b.dataset.week){sel=addDays(sel,+b.dataset.week);openSlot=null;render()}
+  else if(b.dataset.mode){
+    const m=b.dataset.mode;lsSet(LSM,m);
+    if(logs[sel]){logs[sel].mode=m;queueSave(sel)}
+    openSlot=null;render();
+  }else if(b.dataset.swap){openSlot=openSlot===b.dataset.swap?null:b.dataset.swap;render()}
+  else if(b.dataset.pick){
+    prefs.slots=prefs.slots||{};prefs.slots[b.dataset.slot]=b.dataset.pick;queueSave('prefs');
+    openSlot=null;render();
+  }else if(b.dataset.play){
+    const r=runs.find(x=>x.el.dataset.slot===b.dataset.play);if(!r)return;
+    r.paused=!r.paused;if(!r.paused)r.t0=performance.now()-r.at;
+    b.textContent=r.paused?'Play':'Pause';
+  }else if(b.dataset.rest)startRest(+b.dataset.rest);
+});
+document.addEventListener('input',e=>{
+  const t=e.target,type=SCHED[parse(sel).getDay()];
+  if(t.dataset.run){
+    const log=logs[sel]||(logs[sel]={day:type,mode:modeFor(sel),sets:{}});
+    log.run=log.run||{};log.day=type;log.updated=Date.now();
+    if(t.dataset.run==='done')log.run.done=t.checked;
+    else{log.run.mi=t.value;document.getElementById('run-km').textContent=t.value?`mi = ${km(+t.value).toFixed(2)} km`:'miles (optional)'}
+    queueSave(sel);return;
+  }
+  if(!t.dataset.ex)return;
+  const id=t.dataset.ex,i=+t.dataset.i,f=t.dataset.f;
+  const log=logs[sel]||(logs[sel]={day:type,mode:modeFor(sel),sets:{}});
+  log.sets=log.sets||{};
+  const arr=log.sets[id]||(log.sets[id]=setsFor(sel,id).map(s=>({...s})));
+  arr[i][f]=f==='d'?t.checked:t.value;
+  log.day=type;log.updated=Date.now();
+  if(f==='d'){
+    t.closest('.row').classList.toggle('done',t.checked);
+    const [dn,tt]=progress(sel,type,modeFor(sel));
+    document.getElementById('donec').textContent=`${dn} / ${tt}`;
+    document.getElementById('donebar').style.width=(tt?dn/tt*100:0)+'%';
+  }
+  queueSave(sel);
+});
+
+// ---------- rest timer ----------
+const timer=document.getElementById('timer'),timerT=document.getElementById('timerT');
+let tEnd=0,tInt=null;
+function startRest(s){tEnd=Date.now()+s*1000;timer.hidden=false;tick();clearInterval(tInt);tInt=setInterval(tick,250)}
+function tick(){
+  const left=Math.max(0,Math.ceil((tEnd-Date.now())/1000));
+  timerT.textContent=left?`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:'Go';
+  if(!left){clearInterval(tInt);setTimeout(()=>{if(Date.now()>=tEnd)timer.hidden=true},4000)}
+}
+document.getElementById('timerX').onclick=()=>{clearInterval(tInt);timer.hidden=true};
+
+render();
+connect();
+</script>
+
+<script>
+// ---------- home-screen app extras (added by build-app.js) ----------
+(function(){
+  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){} // ask the phone not to clear the log
+  const box=document.createElement('section');box.className='hist';
+  box.innerHTML='<h3>Backup</h3><p class="note">Your log is saved on this phone. Save a backup file now and then, and import it if you switch phones or clear your browser.</p>'+
+    '<div class="foot"><button class="navbtn" id="bk-export">Save backup file</button><label class="navbtn" for="bk-import" style="cursor:pointer">Import backup</label><input type="file" id="bk-import" accept="application/json,.json" hidden></div>'+
+    '<p class="note" id="bk-msg" role="status"></p>';
+  document.getElementById('hist').after(box);
+  const msg=t=>{document.getElementById('bk-msg').textContent=t};
+  document.getElementById('bk-export').onclick=()=>{
+    const data={app:'ppl',version:1,saved:new Date().toISOString(),logs,prefs};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='workout-backup-'+today+'.json';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+    msg('Backup saved. Keep the file somewhere safe, like the Files app, Google Drive or an email to yourself.');
+  };
+  document.getElementById('bk-import').onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      const d=JSON.parse(await f.text());
+      if(d.app!=='ppl'||!d.logs||typeof d.logs!=='object')throw new Error('not a backup');
+      let n=0;
+      for(const k in d.logs)if(isDate(k)&&(!logs[k]||(d.logs[k].updated||0)>=(logs[k].updated||0))){logs[k]=d.logs[k];n++}
+      prefs=Object.assign({slots:{}},prefs,d.prefs||{},{slots:Object.assign({},prefs.slots,(d.prefs||{}).slots)});
+      lsSet(LS,logs);lsSet(LSP,prefs);render();
+      msg('Imported '+n+' day'+(n===1?'':'s')+' from the backup.');
+    }catch(err){msg('That file isn\'t a backup from this app, so nothing was changed.')}
+    e.target.value='';
+  };
+})();
+</script>
+</body>
+</html>
