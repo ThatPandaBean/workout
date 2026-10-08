@@ -320,9 +320,9 @@ const E={
   start:{t:180,hd:180,l1:[-50,60],l2:[-40,-40],a:[0,0],fa2:-40,lift:3},end:{t:150,hd:180,l1:[-15,80],l2:[-30,-30],a:[0,0],fa2:-30,lift:3},
   steps:['Lie on your back, one knee bent with that foot flat, the other leg straight.','Push through the planted heel and lift your hips until your body is straight from shoulders to knee.','Squeeze for 1 second at the top, lower slowly. Switch legs after the set.'],
   tip:'<b>Easier:</b> keep both feet down.'},
- hipthrust:{name:'Couch hip thrust',target:'Glutes',sets:3,reps:'12-15',rest:60,hx:95,hl:['th'],pin:'t1',go:['Lift hips',1],back:['Lower',2],
+ hipthrust:{name:'Couch hip thrust',target:'Glutes',sets:3,reps:'12-15',rest:60,hx:95,hl:['th'],pin:'sh',fix:['f1','f2'],go:['Lift hips',1],back:['Lower',2],
   props:[{type:'box',at:'sh',w:34,d:[-14,0]}],
-  start:{t:-148,l:[-45,70],a:[150,180]},end:{t:178,l:[5,92],a:[150,180]},
+  start:{t:-128,l:[-41,41],a:[150,180],lift:3},end:{t:178,l:[5,92],a:[150,180]},
   steps:['Sit on the floor with your upper back against the edge of a couch, knees bent, feet flat.','Push through your heels and lift your hips until your body is flat from shoulders to knees.','Squeeze for 1 second, lower slowly.'],
   tip:'<b>Harder:</b> one leg at a time, or a backpack on your hips.'},
  slrdl:{name:'Single-leg Romanian deadlift',target:'Hamstrings, glutes',sets:3,reps:'8-12',side:true,rest:60,hx:100,hl:['th'],pin:'t1',go:['Hinge forward',2],back:['Stand tall',1],
@@ -352,13 +352,13 @@ const E={
 
  // ----- gym push -----
  chestpress:{name:'Chest press machine',target:'Chest, shoulders, triceps',sets:3,reps:'8-12',rest:90,wt:true,hx:80,hl:['u','f'],go:['Press',1],back:['Return',2],
-  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',48,-74]}],
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',12,-66]}],
   start:{t:-95,l:[0,90],a:[130,-15],hy:92},end:{t:-95,l:[0,90],a:[5,5],hy:92},
   steps:['Set the seat so the handles line up with the middle of your chest.','Back flat on the pad, push forward until your arms are almost straight.','Return slowly until your hands are near your chest.'],
   tip:'<b>Weight:</b> pick one where the last 2 reps are hard but your form stays clean.'},
  inclinepress:{name:'Incline chest press machine',target:'Upper chest, shoulders',sets:3,reps:'8-12',rest:90,wt:true,hx:85,hl:['u','f'],go:['Press',1],back:['Return',2],
-  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',55,-20]}],
-  start:{t:-110,l:[0,90],a:[110,-30],hy:92},end:{t:-110,l:[0,90],a:[-40,-40],hy:92},
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',-39,-80]}],
+  start:{t:-110,l:[0,90],a:[95,-60],hy:92},end:{t:-110,l:[0,90],a:[-40,-40],hy:92},
   steps:['Set the seat so the handles start at your upper chest.','Back flat on the pad, press up and forward until your arms are almost straight.','Lower slowly.'],
   tip:'<b>Weight:</b> a bit lighter than the flat chest press.'},
  cablepress:{name:'Standing cable chest press',target:'Chest, shoulders, triceps',sets:3,reps:'10-12',rest:90,wt:true,hx:95,hl:['u','f'],go:['Press',1],back:['Return',2],
@@ -367,8 +367,8 @@ const E={
   steps:['Set both cables at chest height and stand in the middle with one foot forward.','Press the handles forward until your arms are almost straight.','Let them come back slowly until your hands are by your chest.'],
   tip:'<b>Check:</b> don\'t let the cables pull your shoulders back past your chest.'},
  shoulderpress:{name:'Shoulder press machine',target:'Shoulders, triceps',sets:3,reps:'8-12',rest:90,wt:true,hx:80,hl:['u','f'],go:['Press',1],back:['Lower',2],
-  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',46,-6]}],
-  start:{t:-95,l:[0,90],a:[100,-85],hy:92},end:{t:-95,l:[0,90],a:[-85,-85],hy:92},
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',-60,-43]}],
+  start:{t:-95,l:[0,90],a:[75,-75],hy:92},end:{t:-95,l:[0,90],a:[-85,-85],hy:92},
   steps:['Set the seat so the handles start at about shoulder height.','Back against the pad, press straight up until your arms are almost straight.','Lower slowly back to shoulder height.'],
   tip:'<b>Weight:</b> start lighter than chest press. Shoulders are a smaller muscle.'},
  frontraise:{name:'Cable front raise',target:'Front shoulders',sets:3,reps:'10-15',rest:60,wt:true,hx:85,hl:['u','f'],go:['Raise',1],back:['Lower',2],
@@ -377,7 +377,7 @@ const E={
   steps:['Stand facing away from a low cable with the handle between your legs.','With straight arms, raise the handle in front of you to shoulder height.','Lower slowly.'],
   tip:'<b>Weight:</b> keep it light. No swinging.'},
  dipmachine:{name:'Seated dip machine',target:'Triceps, chest',sets:3,reps:'10-12',rest:90,wt:true,hx:85,hl:['u','f'],go:['Push down',1],back:['Return',2],
-  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',-40,-22]}],
+  props:[{type:'seat',back:true},{type:'lever',at:'w1',pivot:['hip',-41,-21]}],
   start:{t:-95,l:[0,90],a:[125,20],hy:92},end:{t:-95,l:[0,90],a:[92,92],hy:92},
   steps:['Sit with your back on the pad and grab the handles at your sides.','Push the handles down until your arms are straight, elbows close to your body.','Let them rise slowly until your elbows bend to about 90°.'],
   tip:'<b>Weight:</b> last 2 reps hard, no shrugging your shoulders up.'},
@@ -414,7 +414,7 @@ const E={
   steps:['Sit with your feet on the platform, knees slightly bent, and grab the handle.','Sit tall and pull the handle to your stomach, squeezing your shoulder blades together.','Reach forward slowly until your arms are straight, without rounding your back.'],
   tip:'<b>Check:</b> keep your chest up. Your back moves a little, not a lot.'},
  machinerow:{name:'Chest-supported row machine',target:'Mid back, biceps',sets:3,reps:'8-12',rest:90,wt:true,hx:75,hl:['u','f'],go:['Pull',1],back:['Reach',2],
-  props:[{type:'seat'},{type:'pad',at:'sh',d:[12,10],w:6,h:28},{type:'lever',at:'w1',pivot:['hip',58,-72]}],
+  props:[{type:'seat'},{type:'pad',at:'sh',d:[12,10],w:6,h:28},{type:'lever',at:'w1',pivot:['hip',23,-70]}],
   start:{t:-80,l:[0,90],a:[2,2],hy:92},end:{t:-80,l:[0,90],a:[168,0],hy:92},
   steps:['Set the seat so your chest rests on the pad and you can just reach the handles.','Pull the handles back, squeezing your shoulder blades together.','Let them go forward slowly until your arms are straight.'],
   tip:'<b>Check:</b> keep your chest on the pad the whole time.'},
@@ -636,8 +636,14 @@ function ik(R,T,a,b,bend){
   return [[R[0]+a*Math.cos(base+ang),R[1]+a*Math.sin(base+ang)],[R[0]+d*Math.cos(base),R[1]+d*Math.sin(base)]];
 }
 function prep(ex){
-  const r={ex,A:norm(ex.start),B:norm(ex.end),PS:solve(ex.start,ex),PE:solve(ex.end,ex),bend:{}};
-  (ex.fix||[]).forEach(k=>{ // bend the elbow/knee the same way as in the more bent pose
+  const r={ex,A:norm(ex.start),B:norm(ex.end),PS:solve(ex.start,ex),PE:solve(ex.end,ex),bend:{},fix:ex.fix||[]};
+  const lv=(ex.props||[]).find(p=>p.type==='lever');
+  if(lv){ // machine handle swings on a fixed-length arm around the pivot (the body must not move); the arms bend to hold it
+    const q=[r.PS[lv.pivot[0]][0]+lv.pivot[1],r.PS[lv.pivot[0]][1]+lv.pivot[2]],ang=P=>Math.atan2(P.w1[1]-q[1],P.w1[0]-q[0]),d=ang(r.PE)-ang(r.PS);
+    r.lv={q,L:Math.hypot(r.PS.w1[0]-q[0],r.PS.w1[1]-q[1]),a:ang(r.PS),d:Math.atan2(Math.sin(d),Math.cos(d))};
+    r.fix=['w1','w2'];
+  }
+  r.fix.forEach(k=>{ // bend the elbow/knee the same way as in the more bent pose
     const [R,J]=CH[k],dist=P=>Math.hypot(P[k][0]-P[R][0],P[k][1]-P[R][1]);
     const P=dist(r.PS)<dist(r.PE)?r.PS:r.PE,cr=(P[k][0]-P[R][0])*(P[J][1]-P[R][1])-(P[k][1]-P[R][1])*(P[J][0]-P[R][0]);
     r.bend[k]=cr>=0?1:-1;
@@ -650,9 +656,10 @@ function solveAt(r,u){
   if(ex.pin){const raw=solve(pose,ex,[0,0]);shift=[r.PS[ex.pin][0]-raw[ex.pin][0],r.PS[ex.pin][1]-raw[ex.pin][1]]}
   else shift=[lp(r.PS.s[0],r.PE.s[0]),lp(r.PS.s[1],r.PE.s[1])];
   const P=solve(pose,ex,shift);
-  (ex.fix||[]).forEach(k=>{
+  const lv=r.lv,T=lv&&[lv.q[0]+lv.L*Math.cos(lv.a+lv.d*u),lv.q[1]+lv.L*Math.sin(lv.a+lv.d*u)];
+  r.fix.forEach(k=>{
     const [R,J,a,b]=CH[k];
-    [P[J],P[k]]=ik(P[R],r.PS[k],a,b,r.bend[k]);
+    [P[J],P[k]]=ik(P[R],T||r.PS[k],a,b,r.bend[k]);
     if(TOE[k])P[TOE[k][0]]=mv(P[k],pose[TOE[k][1]],LEN.FT);
   });
   ['f1','f2'].forEach(k=>{ // a swinging leg mid-move: bend the knee (forward) instead of going through the floor
