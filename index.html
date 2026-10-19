@@ -844,6 +844,24 @@ function summarize(mid){
     return `${jogs.length} jogs of ${dur(jogs[0][1])}, with ${dur(walks[0][1])} walks between`;
   return mid.map(([k,v])=>`${k} ${dur(v)}`).join(', ');
 }
+// ---------- daily habits: walking and drinks (from "The Laziest Way to Melt Belly Fat ASAP", The Lazy Final Boss) ----------
+const STEP_GOAL=8000;
+const stepsText=s=>`${(+s||0).toLocaleString()} of ${STEP_GOAL.toLocaleString()} steps${+s>=STEP_GOAL?' · goal hit':''}`;
+function habitTally(){
+  const week=[...Array(7)].map((_,i)=>logs[addDays(sel,-i)]?.habits||{});
+  return `Last 7 days: step goal ${week.filter(x=>+x.steps>=STEP_GOAL).length} of 7 · no sugary drinks ${week.filter(x=>x.drinks).length} of 7`;
+}
+function habitsCard(){
+  const h=logs[sel]?.habits||{};
+  return `<article class="card">
+    <div class="card-h"><div><h3>Walk and drinks</h3><div class="target">Walk ${STEP_GOAL.toLocaleString()} steps and skip sugary drinks</div></div></div>
+    <div class="runlog"><label for="hab-steps">Steps</label><input type="number" inputmode="numeric" min="0" step="1" id="hab-steps" data-habit="steps" placeholder="0" value="${esc(h.steps)}"><span id="hab-steps-txt">${stepsText(h.steps)}</span></div>
+    <div class="bar"><div id="hab-bar" style="width:${Math.min(100,(+h.steps||0)/STEP_GOAL*100)}%"></div></div>
+    <div class="runlog"><label for="hab-drinks"><input type="checkbox" id="hab-drinks" data-habit="drinks" ${h.drinks?'checked':''}> No sugary drinks today</label></div>
+    <p class="tip"><b>How:</b> split the walking however you like: a morning walk, an evening walk, walking between classes. Copy today's step count from the Health app. For drinks, have water, black coffee or other zero-calorie drinks instead of soda, juice, energy drinks and sweet coffee.</p>
+    <div class="foot"><span class="last" id="hab-tally">${habitTally()}</span></div>
+  </article>`;
+}
 function runCard(){
   const p=runPlan(runIndex(sel)),total=p.segs.reduce((a,x)=>a+x[1],0),mi=estMiles(p.segs),log=logs[sel]?.run||{};
   return `<article class="card">
@@ -936,6 +954,7 @@ function render(){
   const absHtml=`<h3 class="sec">Abs <small>3 exercises · every day · about ${mins(tAbs)} with breaks</small></h3>`+absIds.map((id,i)=>card(id,i,'abs',mode)).join('');
   const runHtml=runDay?`<h3 class="sec">Run <small>Tue, Thu and Sun · ${mins(tRun)} with warm-up and cool-down walks</small></h3>`+runCard():'';
   html+=type==='rest'?runHtml+absHtml:absHtml+runHtml; // rest days: run first
+  html+=`<h3 class="sec">Daily habits <small>every day</small></h3>`+habitsCard();
   document.getElementById('list').innerHTML=html;
   setupAnim();rt?rtTick():rtPaint();
   }
@@ -1001,6 +1020,14 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const t=e.target,type=SCHED[parse(sel).getDay()];
+  if(t.dataset.habit){ // steps and drinks; not counted as a workout, so they don't show in Recent workouts
+    const log=logs[sel]||(logs[sel]={day:type,mode:modeFor(sel),sets:{}});
+    log.habits=log.habits||{};log.updated=Date.now();
+    if(t.dataset.habit==='drinks')log.habits.drinks=t.checked;
+    else{log.habits.steps=t.value;document.getElementById('hab-steps-txt').textContent=stepsText(t.value);document.getElementById('hab-bar').style.width=Math.min(100,(+t.value||0)/STEP_GOAL*100)+'%'}
+    document.getElementById('hab-tally').textContent=habitTally();
+    queueSave(sel);return;
+  }
   if(t.dataset.run){
     const log=logs[sel]||(logs[sel]={day:type,mode:modeFor(sel),sets:{}});
     log.run=log.run||{};log.day=type;log.updated=Date.now();
