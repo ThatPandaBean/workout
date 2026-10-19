@@ -1071,7 +1071,12 @@ connect();
 <script>
 // ---------- home-screen app extras: offline, sync, backup ----------
 (function(){
-  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    // A new version took over: reload once so it shows now, not on the next open. (Not on the very first install.)
+    let had=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had){had=false;location.reload()}});
+  }
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){} // ask the phone not to clear the log
   const HOME='https://thatpandabean-workout.firebaseapp.com/';
   const moved=location.hostname.endsWith('github.io'); // the old address: sign-in only works on the Firebase one
