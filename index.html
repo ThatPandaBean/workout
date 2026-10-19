@@ -801,7 +801,7 @@ const didAnything=k=>{const l=logs[k];return !!(l&&(l.run?.done||progress(k,l.da
 // (Objects, not [from,to] pairs: Firestore can't store a list inside a list.)
 // A day with something logged is never shown as sick, so logged work never gets hidden.
 const sickNow=()=>{const p=prefs.sick?.at(-1);return p&&!p.to?p:null};
-const sickPeriod=k=>didAnything(k)?null:(prefs.sick||[]).find(p=>k>=p.from&&(p.to?k<p.to:k<=today));
+const sickPeriod=k=>didAnything(k)?null:(prefs.sick||[]).find(p=>k>=p.from&&(!p.to||k<p.to));
 
 // ---------- running: NHS Couch to 5K (nhs.uk running plan) ----------
 const RUN_DAYS=[0,2,4]; // Sun, Tue, Thu
