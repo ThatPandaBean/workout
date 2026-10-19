@@ -41,6 +41,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .top h1{font-size:26px;text-transform:uppercase;letter-spacing:.04em}
 .status{font-size:13px;color:var(--muted)}
+.topr{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+#sickbtn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:600}
 .status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
 .status.ok::before{background:var(--legs)}.status.err::before{background:var(--push)}
 
@@ -164,7 +166,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="wrap d-rest" id="app">
   <header class="top">
     <h1>Push Pull Legs</h1>
-    <span class="status" id="status">Loading your log</span>
+    <div class="topr"><span class="status" id="status">Loading your log</span><button class="navbtn" id="sickbtn" data-sick aria-pressed="false">I'm sick</button></div>
   </header>
   <nav class="weeknav" aria-label="Week">
     <button class="navbtn" data-week="-7" aria-label="Previous week">&#8249; Prev</button>
@@ -736,7 +738,7 @@ function attachStore(store,collection){
     }
     if(!dirty.prefs){
       if(nextPrefs)prefs={slots:{},...nextPrefs};
-      else if(!snap.metadata.fromCache&&(Object.keys(prefs.slots||{}).length||prefs.runAdj))queueSave('prefs');
+      else if(!snap.metadata.fromCache&&(Object.keys(prefs.slots||{}).length||prefs.runAdj||prefs.sick?.length))queueSave('prefs');
     }
     logs=next;lsSet(LS,logs);lsSet(LSP,prefs);
     if(document.activeElement?.matches('input[type=number]'))pendingRender=true;else render();
@@ -795,6 +797,11 @@ function progress(k,type,mode){
   return [done,total];
 }
 const didAnything=k=>{const l=logs[k];return !!(l&&(l.run?.done||progress(k,l.day||SCHED[parse(k).getDay()],l.mode||'home')[0]>0))};
+// Sick days: prefs.sick is a list of {from: first sick day, to: day you felt better}; to is null while you're still sick.
+// (Objects, not [from,to] pairs: Firestore can't store a list inside a list.)
+// A day with something logged is never shown as sick, so logged work never gets hidden.
+const sickNow=()=>{const p=prefs.sick?.at(-1);return p&&!p.to?p:null};
+const sickPeriod=k=>didAnything(k)?null:(prefs.sick||[]).find(p=>k>=p.from&&(p.to?k<p.to:k<=today));
 
 // ---------- running: NHS Couch to 5K (nhs.uk running plan) ----------
 const RUN_DAYS=[0,2,4]; // Sun, Tue, Thu
@@ -891,17 +898,26 @@ function rtPaint(i,e){
 const app=document.getElementById('app');
 function render(){
   pendingRender=false;
-  const d=parse(sel),type=SCHED[d.getDay()],mode=modeFor(sel),runDay=RUN_DAYS.includes(d.getDay());
-  app.className='wrap d-'+type;
+  const d=parse(sel),type=SCHED[d.getDay()],mode=modeFor(sel),runDay=RUN_DAYS.includes(d.getDay()),sick=sickPeriod(sel);
+  app.className='wrap d-'+(sick?'rest':type);
+  const sb=document.getElementById('sickbtn');sb.textContent=sickNow()?'I\'m better':'I\'m sick';sb.setAttribute('aria-pressed',!!sickNow());
   const mon=addDays(sel,-((d.getDay()+6)%7));
   const days=[...Array(7)].map((_,i)=>addDays(mon,i));
   const fmt=k=>parse(k).toLocaleDateString(undefined,{month:'short',day:'numeric'});
   document.getElementById('weeklabel').textContent=`${fmt(days[0])} to ${fmt(days[6])}`;
   document.getElementById('week').innerHTML=days.map(k=>{
-    const dd=parse(k),t=SCHED[dd.getDay()],run=RUN_DAYS.includes(dd.getDay());
-    return `<button class="wd d-${t}${k===sel?' sel':''}${k===today?' today':''}${didAnything(k)?' logged':''}" data-date="${k}" aria-pressed="${k===sel}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}, ${LABEL[t]}${run?' and run':''}">
-      <small>${dd.toLocaleDateString(undefined,{weekday:'short'})}</small><b>${dd.getDate()}</b><i>${LABEL[t]}</i><i>${run?'+ Run':'&nbsp;'}</i></button>`}).join('');
+    const dd=parse(k),sk=sickPeriod(k),t=sk?'rest':SCHED[dd.getDay()],run=!sk&&RUN_DAYS.includes(dd.getDay()),lab=sk?'Sick':LABEL[t];
+    return `<button class="wd d-${t}${k===sel?' sel':''}${k===today?' today':''}${didAnything(k)?' logged':''}" data-date="${k}" aria-pressed="${k===sel}" aria-label="${dd.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}, ${lab}${run?' and run':''}">
+      <small>${dd.toLocaleDateString(undefined,{weekday:'short'})}</small><b>${dd.getDate()}</b><i>${lab}</i><i>${run?'+ Run':'&nbsp;'}</i></button>`}).join('');
   const long=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  if(sick){
+    const since=parse(sick.from).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    document.getElementById('dayhead').innerHTML=`<div class="dayrow"><div><h2>Sick</h2><div class="date">${long}${sel===today?' · Today':''}</div></div></div>
+      ${sel!==today?'<div class="meta"><button class="navbtn" data-date="'+today+'">Back to today</button></div>':''}`;
+    document.getElementById('list').innerHTML=`<div class="restday"><p>Sick day. The plan is paused, so rest, drink water and sleep.</p>
+      <p class="note">${sick.to?`You were sick from ${since} to ${parse(addDays(sick.to,-1)).toLocaleDateString(undefined,{month:'short',day:'numeric'})}.`:`Sick since ${since}. When you feel better, press "I'm better" at the top. You'll pick up with that day's workout, and your Couch to 5K place stays where it was.`}</p></div>`;
+    setupAnim();rt?rtTick():rtPaint();
+  }else{
   const [done,total]=progress(sel,type,mode);
   const liftIds=type==='rest'?[]:chosen(sel,type,mode),absIds=chosen(sel,'abs',mode);
   const tLift=type==='rest'?0:sectionSeconds(liftIds,true),tAbs=sectionSeconds(absIds,false),tRun=runDay?runSeconds(sel):0;
@@ -922,6 +938,7 @@ function render(){
   html+=type==='rest'?runHtml+absHtml:absHtml+runHtml; // rest days: run first
   document.getElementById('list').innerHTML=html;
   setupAnim();rt?rtTick():rtPaint();
+  }
   const hk=Object.keys(logs).filter(k=>isDate(k)&&didAnything(k)).sort().reverse().slice(0,10);
   document.getElementById('hist').innerHTML=`<h3>Recent workouts</h3>`+(hk.length?hk.map(k=>{
     const t=logs[k].day||SCHED[parse(k).getDay()],m=logs[k].mode||'home',[dn,tt]=progress(k,t,m);
@@ -956,7 +973,14 @@ function card(id,i,type,mode){
 
 // ---------- events ----------
 document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-date],[data-week],[data-mode],[data-rest],[data-swap],[data-pick],[data-play],[data-runtimer],[data-runadj]');if(!b)return;
+  const b=e.target.closest('[data-date],[data-week],[data-mode],[data-rest],[data-swap],[data-pick],[data-play],[data-runtimer],[data-runadj],[data-sick]');if(!b)return;
+  if(b.dataset.sick!=null){ // start a sick period today, or end it (today counts as a normal day again)
+    const s=prefs.sick=prefs.sick||[],p=sickNow();
+    if(p){p.to=today;if(p.from>=today)s.pop()}
+    else if(s.at(-1)?.to===today)s.at(-1).to=null; // got better and sick again the same day: reopen that period
+    else s.push({from:today,to:null});
+    queueSave('prefs');render();return;
+  }
   if(b.dataset.runtimer){rt?stopRunTimer():startRunTimer();return}
   if(b.dataset.runadj){prefs.runAdj=(prefs.runAdj||0)+(+b.dataset.runadj);queueSave('prefs');render();return}
   if(b.dataset.date){sel=b.dataset.date;openSlot=null;render();window.scrollTo({top:0})}
